@@ -12,12 +12,13 @@ The new paragraph written by your ChatGPT assistant:
 {{writer_new_paragraph}}
 
 Three plans of what to write next proposed by your ChatGPT assistant:
-{{previous_plans}}
+{% for plan in previous_plans %}
+{{loop.index}}. {{plan}}
+{% endfor %}
 
-Now start choosing, organize your output by strictly following the output format as below:
+The output should be outputted in JSON with following fields:
 
-Selected Plan:
-<copy the selected plan here>
-
-Reason:
-<Explain why you choose the plan>
+{
+    "reason": <explain why you choose the plan>,
+    "selected_plan": <copy the selected plan here>
+}

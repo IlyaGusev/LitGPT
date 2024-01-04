@@ -1,5 +1,5 @@
-Please write a {{novel_type}} novel with this description:
-{{description}}
+Please write a {% if not novel_type %}Science Fiction{% else %}{{novel_type}}{% endif %} novel with this description:
+{% if description %}{{description}}{% else %}A novel about anything{% endif %}
 
 Plan 50 chapters. Follow the format below precisely:
 

@@ -1,4 +1,7 @@
 import json
+import traceback
+
+import torch
 from openai_wrapper import openai_completion, encode_prompt, DEFAULT_MODEL
 
 
@@ -29,13 +32,40 @@ def parse_json_output(output):
     return record
 
 
-def get_init(description: str, novel_type: str):
-    if description == "":
-        description = "A novel about anything"
-    if novel_type == "":
-        novel_type = "Science Fiction"
-    init_prompt = encode_prompt("prompts/init.jinja", description=description, novel_type=novel_type)
-    response = novel_completion(init_prompt)
-    print(response)
-    output = parse_json_output(response)
+def novel_json_completion(
+    prompt: str,
+    model_name: str = DEFAULT_MODEL,
+    system_prompt: str = DEFAULT_SYSTEM_PROMPT
+):
+    while True:
+        try:
+            response = novel_completion(
+                prompt=prompt,
+                model_name=model_name,
+                system_prompt=system_prompt
+            )
+            output = parse_json_output(response)
+            break
+        except Exception as e:
+            print("Retry...")
+            traceback.print_exc()
+            continue
     return output
+
+
+def cos_sim(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    if not isinstance(a, torch.Tensor):
+        a = torch.tensor(a)
+
+    if not isinstance(b, torch.Tensor):
+        b = torch.tensor(b)
+
+    if len(a.shape) == 1:
+        a = a.unsqueeze(0)
+
+    if len(b.shape) == 1:
+        b = b.unsqueeze(0)
+
+    a_norm = torch.nn.functional.normalize(a, p=2, dim=1)
+    b_norm = torch.nn.functional.normalize(b, p=2, dim=1)
+    return torch.mm(a_norm, b_norm.transpose(0, 1))

@@ -16,18 +16,13 @@ The new paragraph written by your ChatGPT assistant:
 The plan of what to write next proposed by your ChatGPT assistant:
 {{user_edited_plan}}
 
-Now start writing, organize your output by strictly following the output format as below:
+The output should be outputted in JSON with following fields:
 
-Extended Paragraph:
-<string of output paragraph>, around 40-50 sentences.
-
-Selected Plan:
-<copy the plan here>
-
-Revised Plan:
-<string of revised plan>, keep it short, around 5-7 sentences.
+{
+    "extended_paragraph": <string of output paragraph, around 40-50 sentences>,
+    "selected_plan":  <copy the plan here>,
+    "revised_plan": <string of revised plan, keep it short, around 5-7 sentences.>
+}
 
 Very Important:
 Remember that you are writing a novel. Write like a novelist and do not move too fast when writing the plan for the next paragraph. Think about how the plan can be attractive for common readers when selecting and extending the plan. Remember to follow the length constraints! Remember that the chapter will contain over 10 paragraphs and the novel will contain over 100 chapters. And the next paragraph will be the second paragraph of the second chapter. You need to leave space for future stories.
-
-

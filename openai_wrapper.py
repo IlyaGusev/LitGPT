@@ -22,7 +22,7 @@ class OpenAIDecodingArguments:
 
 
 DEFAULT_ARGS = OpenAIDecodingArguments()
-DEFAULT_MODEL = "gpt-4-1106-preview"
+DEFAULT_MODEL = "gpt-3.5-turbo"
 DEFAULT_SLEEP_TIME = 20
 
 

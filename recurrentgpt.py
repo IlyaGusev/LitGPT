@@ -1,21 +1,22 @@
 import random
-from typing import List
+import json
+from typing import List, Optional
 from dataclasses import dataclass
 
 import torch
-from sentence_transformers import  util
 
-from utils import novel_completion, encode_prompt, parse_json_output
+from utils import novel_json_completion, encode_prompt, cos_sim
 
 
 @dataclass
 class State:
     written_paragraphs: str
     last_paragraph: str
+    prev_paragraph: str
     short_memory: str
     long_memory: str
-    memory_index: torch.Tensor = None
-    instruction: str = None
+    memory_index: Optional[torch.Tensor] = None
+    instruction: Optional[str] = None
     next_instructions: List[str] = None
 
     def update_index(self, embedder):
@@ -30,62 +31,75 @@ class State:
 
 
 class RecurrentGPT:
-    def __init__(self, embedder):
+    def __init__(self, embedder, new_character_prob: float = 0.1, model_name: str = "gpt-3.5-turbo"):
         self.embedder = embedder
+        self.new_character_prob = new_character_prob
+        self.model_name = model_name
 
     def get_long_memory(self, instruction, long_memory, memory_index, top_k: int = 2):
         instruction_embedding = self.embedder.encode(instruction, convert_to_tensor=True)
-        memory_scores = util.cos_sim(instruction_embedding, memory_index)[0]
+        memory_scores = cos_sim(instruction_embedding, memory_index)[0]
         top_k_idx = torch.topk(memory_scores, k=top_k)[1]
         top_k_memory = [long_memory[idx] for idx in top_k_idx]
-        input_long_term_memory = '\n'.join([f"Related Paragraphs {i+1}:" + selected_memory for i, selected_memory in enumerate(top_k_memory)])
-        return input_long_term_memory
+        return '\n'.join([f"Related Paragraphs {i+1}: {memory}" for i, memory in enumerate(top_k_memory)])
 
-    def prepare_step_prompt(self, state: State, new_character_prob=0.1):
-        state.update_index(self.embedder)
-        formatted_long_memory = self.get_long_memory(state.instruction, state.long_memory, state.memory_index)
-
-        if random.random() < new_character_prob:
-            new_character_prompt = f"If it is reasonable, you can introduce a new character in the output paragrah and add it into the memory."
-        else:
-            new_character_prompt = ""
-
+    def step(self, state: State):
         assert state.instruction
-        return encode_prompt(
+
+        state.update_index(self.embedder)
+        formatted_long_memory = self.get_long_memory(
+            state.instruction,
+            state.long_memory,
+            state.memory_index
+        )
+        add_new_character = random.random() < self.new_character_prob
+
+        prompt = encode_prompt(
             "prompts/step.jinja",
             short_memory=state.short_memory,
             input_paragraph=state.last_paragraph,
             input_instruction=state.instruction,
             input_long_term_memory=formatted_long_memory,
-            new_character_prompt=new_character_prompt
+            add_new_character=add_new_character
         )
-
-    def parse_output(self, output):
-        output = parse_json_output(output)
-        output = {
-            "output_memory": output["updated_memory"],
-            "output_paragraph": output["output_paragraph"],
-            "output_instruction": [
-                output["instruction_1"].strip(),
-                output["instruction_2"].strip(),
-                output["instruction_3"].strip(),
-            ]
-        }
-        return output
-
-    def step(self, state: State):
-        prompt = self.prepare_step_prompt(state)
+        print("STEP PROMPT")
         print(prompt)
-        print("@@@@@@@@@@@@@")
-        response = novel_completion(prompt)
-        print(response)
-        print("=============")
-        output = self.parse_output(response)
+        print()
+
+        output = novel_json_completion(prompt, model_name=self.model_name)
+        print("STEP OUTPUT")
+        print(json.dumps(output, ensure_ascii=False, indent=4))
+        print("===========")
+
+        state.prev_paragraph = state.last_paragraph
         state.long_memory.append(state.last_paragraph)
         state.update_index(self.embedder)
-        state.written_paragraphs = state.written_paragraphs + "\n\n" + output["output_paragraph"]
-        state.next_instructions = output["output_instruction"]
-        state.last_paragraph = output["output_paragraph"]
-        state.short_memory = output["output_memory"]
-        print(state)
+
+        output_paragraph = " ".join([p for p in output["output_paragraph"].split("\n") if p])
+        output_paragraph = output_paragraph.strip()
+
+        state.written_paragraphs = state.written_paragraphs + "\n\n" + output_paragraph
+        state.next_instructions = [
+            output["instruction_1"].strip(),
+            output["instruction_2"].strip(),
+            output["instruction_3"].strip(),
+        ]
+        state.last_paragraph = output_paragraph
+        state.short_memory = output["updated_memory"]
         return state
+
+
+def get_init(description: str, novel_type: str, model_name: str):
+    init_prompt = encode_prompt(
+        "prompts/init.jinja",
+        description=description,
+        novel_type=novel_type
+    )
+    print("INIT PROMPT")
+    print(init_prompt)
+    print()
+    output = novel_json_completion(init_prompt, model_name)
+    print("INIT OUTPUT")
+    print(json.dumps(output, ensure_ascii=False, indent=4))
+    print("===========")
+    return output
