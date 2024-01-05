@@ -71,97 +71,104 @@ def on_selection_mode_select(evt: gr.SelectData):
     )
 
 
-with gr.Blocks(title="RecurrentGPT", css="footer {visibility: hidden}", theme="default") as demo:
+with gr.Blocks(title="LitGPT", css="footer {visibility: hidden}", theme="default") as demo:
     state = gr.State(None)
-    gr.Markdown(
-        """
-    # RecurrentGPT
-    Interactive Generation of (Arbitrarily) Long Texts with Human-in-the-Loop
-    """)
+    gr.Markdown("# LitGPT")
+    with gr.Box():
+        with gr.Row():
+            with gr.Column(scale=1, min_width=200):
+                model_name = gr.Dropdown(
+                    ["gpt-3.5-turbo-16k", "gpt-4-1106-preview"],
+                    value="gpt-3.5-turbo-16k",
+                    multiselect=False,
+                    label="Model name",
+                 )
+            with gr.Column(scale=1, min_width=200):
+                novel_type = gr.Textbox(
+                    label="Novel type",
+                    value=DEFAULT_NOVEL_TYPE
+                )
+                gr.Examples([
+                    "Science Fiction",
+                    "Romance",
+                    "Mystery",
+                    "Fantasy",
+                    "Historical",
+                    "Horror",
+                    "Thriller",
+                    "Western",
+                    "Young Adult"
+                ], inputs=[novel_type])
+            with gr.Column(scale=3, min_width=400):
+                description = gr.Textbox(label="Description", value=DEFAULT_DESCRIPTION)
+                gr.Examples([
+                    "A novel about aliens",
+                    "Роман на русском в сеттинге коммунизма в высокотехнологичном будущем",
+                    "Рассказ на русском об инопланетных грибах, стилизованный под справочник",
+                    "A love story of a man and AI",
+                ], inputs=[description])
+    with gr.Row():
+        btn_init = gr.Button(
+            "Init Novel Generation",
+            variant="primary"
+        )
+
     with gr.Row():
         with gr.Column():
-            with gr.Box():
-                with gr.Row():
-                    with gr.Column(scale=1, min_width=200):
-                        model_name = gr.Dropdown(
-                            ["gpt-3.5-turbo-16k", "gpt-4-1106-preview"],
-                            value="gpt-3.5-turbo-16k",
-                            multiselect=False,
-                            label="Model name",
-                        )
-                    with gr.Column(scale=1, min_width=200):
-                        novel_type = gr.Textbox(
-                            label="Novel type",
-                            value=DEFAULT_NOVEL_TYPE
-                        )
-                    with gr.Column(scale=2, min_width=400):
-                        description = gr.Textbox(label="Description", value=DEFAULT_DESCRIPTION)
-            btn_init = gr.Button(
-                "Init Novel Generation",
-                variant="primary"
-            )
-            gr.Examples([
-                "Science Fiction",
-                "Romance",
-                "Mystery",
-                "Fantasy",
-                "Historical",
-                "Horror",
-                "Thriller",
-                "Western",
-                "Young Adult"
-            ], inputs=[novel_type])
             written_paragraphs = gr.Textbox(
                 label="Written Paragraphs (editable)",
-                max_lines=23,
-                lines=23
+                max_lines=25,
+                lines=25
             )
         with gr.Column():
             with gr.Box():
                 gr.Markdown("### Memory Module\n")
                 short_memory = gr.Textbox(
                     label="Short-Term Memory (editable)",
-                    max_lines=3,
-                    lines=3
+                    max_lines=5,
+                    lines=5
                 )
                 long_memory = gr.Textbox(
                     label="Long-Term Memory (editable)",
-                    max_lines=6,
-                    lines=6
+                    max_lines=12,
+                    lines=12
                 )
-            with gr.Box():
-                gr.Markdown("### Instruction Module\n")
-                with gr.Row():
-                    instruction1 = gr.Textbox(
-                        label="Instruction 1", max_lines=3, lines=3, interactive=False
-                    )
-                    instruction2 = gr.Textbox(
-                        label="Instruction 2", max_lines=3, lines=3, interactive=False
-                    )
-                    instruction3 = gr.Textbox(
-                        label="Instruction 3", max_lines=3, lines=3, interactive=False
-                    )
-                with gr.Row():
-                    selection_mode = gr.Radio(
-                        [("Select with GPT", "gpt"), ("Select randomly", "random"), ("Select manually", "manual")],
-                        label="Selection mode",
-                        value="random"
-                    )
-                with gr.Row():
-                    with gr.Column(scale=1, min_width=100):
-                        selected_plan = gr.Radio(
-                            ["Instruction 1", "Instruction 2", "Instruction 3"],
-                            label="Instruction Selection",
-                            interactive=False
-                        )
-                    with gr.Column(scale=3, min_width=300):
-                        selected_instruction = gr.Textbox(
-                            label="Selected Instruction (editable)",
-                            max_lines=5,
-                            lines=5,
-                            interactive=False
-                        )
-            btn_step = gr.Button("Next Step", variant="primary")
+
+    with gr.Box():
+        gr.Markdown("### Instruction Module\n")
+        with gr.Row():
+            instruction1 = gr.Textbox(
+                label="Instruction 1", max_lines=6, lines=6, interactive=False
+            )
+            instruction2 = gr.Textbox(
+                label="Instruction 2", max_lines=6, lines=6, interactive=False
+            )
+            instruction3 = gr.Textbox(
+                label="Instruction 3", max_lines=6, lines=6, interactive=False
+            )
+        with gr.Row():
+            selection_mode = gr.Radio(
+                [("Select with GPT", "gpt"), ("Select randomly", "random"), ("Select manually", "manual")],
+                label="Selection mode",
+                value="random"
+            )
+        with gr.Row():
+            with gr.Column(scale=1, min_width=100):
+                selected_plan = gr.Radio(
+                    ["Instruction 1", "Instruction 2", "Instruction 3"],
+                    label="Instruction Selection",
+                    interactive=False
+                )
+            with gr.Column(scale=3, min_width=300):
+                selected_instruction = gr.Textbox(
+                    label="Selected Instruction (editable)",
+                    max_lines=5,
+                    lines=5,
+                    interactive=False
+                )
+
+    with gr.Row():
+        btn_step = gr.Button("Next Step", variant="primary")
 
     btn_init.click(
         init,
