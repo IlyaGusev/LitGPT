@@ -1,8 +1,9 @@
 import json
 import traceback
+import pathlib
 
 import torch
-from openai_wrapper import openai_completion, encode_prompt, DEFAULT_MODEL
+from litgpt.openai_wrapper import openai_completion, encode_prompt, DEFAULT_MODEL
 
 
 DEFAULT_SYSTEM_PROMPT = "You are a helpful and creative assistant for writing novel."

@@ -5,7 +5,7 @@ from dataclasses import dataclass, asdict
 
 import torch
 
-from utils import novel_json_completion, encode_prompt, cos_sim
+from litgpt.utils import novel_json_completion, encode_prompt, cos_sim
 
 
 @dataclass
@@ -62,7 +62,7 @@ class RecurrentGPT:
         add_new_character = random.random() < self.new_character_prob
 
         prompt = encode_prompt(
-            "prompts/step.jinja",
+            "step.jinja",
             short_memory=state.short_memory,
             input_paragraph=state.last_paragraph,
             input_instruction=state.instruction,
@@ -85,7 +85,7 @@ class RecurrentGPT:
         output_paragraph = " ".join([p for p in output["output_paragraph"].split("\n") if p])
         output_paragraph = output_paragraph.strip()
 
-        state.written_paragraphs = state.written_paragraphs + "\n\n" + output_paragraph
+        state.written_paragraphs = state.written_paragraphs.strip() + "\n\n" + output_paragraph
         state.next_instructions = [
             output["instruction_1"].strip(),
             output["instruction_2"].strip(),
@@ -96,17 +96,45 @@ class RecurrentGPT:
         return state
 
 
-def gen_init(description: str, novel_type: str, model_name: str):
+def gen_init_state(description: str, novel_type: str, model_name: str):
     init_prompt = encode_prompt(
-        "prompts/init.jinja",
+        "init.jinja",
         description=description,
         novel_type=novel_type
     )
     print("INIT PROMPT")
     print(init_prompt)
     print()
-    output = novel_json_completion(init_prompt, model_name)
+    init_info = novel_json_completion(init_prompt, model_name)
     print("INIT OUTPUT")
-    print(json.dumps(output, ensure_ascii=False, indent=4))
+    print(json.dumps(init_info, ensure_ascii=False, indent=4))
     print("===========")
-    return output
+
+    first_paragraphs = '\n\n'.join([
+        init_info["paragraph_1"],
+        init_info["paragraph_2"],
+        init_info["paragraph_3"]
+    ])
+    written_paragraphs = encode_prompt(
+        "paragraphs.jinja",
+        name=init_info["name"],
+        outline=init_info["outline"],
+        first_paragraphs=first_paragraphs
+    )
+    state = State(
+        prev_paragraph=init_info["paragraph_2"],
+        last_paragraph=init_info["paragraph_3"],
+        short_memory=init_info["summary"],
+        long_memory=[
+            init_info["paragraph_1"],
+            init_info['paragraph_2']
+        ],
+        written_paragraphs=written_paragraphs,
+        next_instructions=[
+            init_info["instruction_1"],
+            init_info["instruction_2"],
+            init_info["instruction_3"]
+        ]
+    )
+
+    return state

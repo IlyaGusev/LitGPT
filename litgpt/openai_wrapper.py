@@ -1,12 +1,16 @@
 import copy
 import logging
 import time
+import pathlib
 from dataclasses import dataclass
 from typing import Optional, Sequence
 from multiprocessing.pool import ThreadPool
 
 import openai
 from jinja2 import Template
+
+DIR_PATH = pathlib.Path(__file__).parent.resolve()
+PROMPTS_DIR_PATH = DIR_PATH / "prompts"
 
 
 @dataclass
@@ -22,7 +26,7 @@ class OpenAIDecodingArguments:
 
 
 DEFAULT_ARGS = OpenAIDecodingArguments()
-DEFAULT_MODEL = "gpt-3.5-turbo"
+DEFAULT_MODEL = "gpt-3.5-turbo-16k"
 DEFAULT_SLEEP_TIME = 20
 
 
@@ -69,7 +73,8 @@ def openai_batch_completion(
     return completions
 
 
-def encode_prompt(template_path, **kwargs):
+def encode_prompt(template_name, **kwargs):
+    template_path = PROMPTS_DIR_PATH / template_name
     with open(template_path) as f:
         template = Template(f.read())
     return template.render(**kwargs).strip() + "\n"

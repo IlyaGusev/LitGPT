@@ -1,43 +1,19 @@
+import random
 import gradio as gr
 from sentence_transformers import SentenceTransformer
 
-from recurrentgpt import RecurrentGPT, State, gen_init
-from utils import encode_prompt
-from human_simulator import Human
+from litgpt.recurrentgpt import RecurrentGPT, State, gen_init_state
+from litgpt.utils import encode_prompt
+from litgpt.human_simulator import Human
 
 
-embedder = SentenceTransformer('multi-qa-mpnet-base-cos-v1')
+EMBEDDER = SentenceTransformer('multi-qa-mpnet-base-cos-v1')
+DEFAULT_NOVEL_TYPE = "Science Fiction"
+DEFAULT_DESCRIPTION = "Роман на русском в сеттинге коммунизма в высокотехнологичном будущем. Сюжет придумай сам."
 
 
 def init(state, novel_type, description, model_name):
-    init_info = gen_init(novel_type, description, model_name=model_name)
-    first_paragraphs = '\n\n'.join([
-        init_info["paragraph_1"],
-        init_info["paragraph_2"],
-        init_info["paragraph_3"]
-    ])
-    written_paragraphs = encode_prompt(
-        "prompts/paragraphs.jinja",
-        name=init_info["name"],
-        outline=init_info["outline"],
-        first_paragraphs=first_paragraphs
-    )
-    state = State(
-        prev_paragraph=init_info["paragraph_2"],
-        last_paragraph=init_info["paragraph_3"],
-        short_memory=init_info["summary"],
-        long_memory=[
-            init_info["paragraph_1"],
-            init_info['paragraph_2']
-        ],
-        written_paragraphs=written_paragraphs,
-        next_instructions=[
-            init_info["instruction_1"],
-            init_info["instruction_2"],
-            init_info["instruction_3"]
-        ]
-    )
-
+    state = gen_init_state(novel_type, description, model_name=model_name)
     return (
         state,
         state.short_memory,
@@ -49,7 +25,7 @@ def init(state, novel_type, description, model_name):
     )
 
 
-def step(state, short_memory, long_memory, selected_instruction, written_paragraphs, model_name, emulate_human):
+def step(state, short_memory, long_memory, selected_instruction, written_paragraphs, model_name, selection_mode):
     writer = RecurrentGPT(embedder=embedder, model_name=model_name)
 
     assert state is not None
@@ -58,9 +34,11 @@ def step(state, short_memory, long_memory, selected_instruction, written_paragra
     state.short_memory = short_memory
     state.written_paragraphs = written_paragraphs
 
-    if emulate_human:
+    if selection_mode == "gpt":
         human = Human(model_name=model_name)
         state = human.step(state)
+    elif selection_mode == "random":
+        state.instruction = random.choice(state.next_instructions)
     else:
         assert selected_instruction
 
@@ -78,16 +56,18 @@ def step(state, short_memory, long_memory, selected_instruction, written_paragra
     )
 
 
-def on_select(instruction1, instruction2, instruction3, evt: gr.SelectData):
+def on_selected_plan_select(instruction1, instruction2, instruction3, evt: gr.SelectData):
     selected_plan = int(evt.value.replace("Instruction ", ""))
     selected_plan = [instruction1, instruction2, instruction3][selected_plan - 1]
     return selected_plan
 
 
-def update_state(emulate_human_value):
+def on_selection_mode_select(evt: gr.SelectData):
+    value = evt.value
+    is_manual = "manual" in value
     return (
-        gr.Radio.update(interactive=not emulate_human_value),
-        gr.Textbox.update(interactive=not emulate_human_value)
+        gr.Radio.update(interactive=is_manual),
+        gr.Textbox.update(interactive=is_manual)
     )
 
 
@@ -111,10 +91,11 @@ with gr.Blocks(title="RecurrentGPT", css="footer {visibility: hidden}", theme="d
                         )
                     with gr.Column(scale=1, min_width=200):
                         novel_type = gr.Textbox(
-                            label="Novel type", placeholder="e.g. science fiction"
+                            label="Novel type",
+                            value=DEFAULT_NOVEL_TYPE
                         )
                     with gr.Column(scale=2, min_width=400):
-                        description = gr.Textbox(label="Description")
+                        description = gr.Textbox(label="Description", value=DEFAULT_DESCRIPTION)
             btn_init = gr.Button(
                 "Init Novel Generation",
                 variant="primary"
@@ -161,24 +142,25 @@ with gr.Blocks(title="RecurrentGPT", css="footer {visibility: hidden}", theme="d
                         label="Instruction 3", max_lines=3, lines=3, interactive=False
                     )
                 with gr.Row():
-                    emulate_human = gr.Checkbox(
-                        label="Automatic",
-                        info="Select automatically"
+                    selection_mode = gr.Radio(
+                        [("Select with GPT", "gpt"), ("Select randomly", "random"), ("Select manually", "manual")],
+                        label="Selection mode",
+                        value="random"
                     )
                 with gr.Row():
                     with gr.Column(scale=1, min_width=100):
                         selected_plan = gr.Radio(
                             ["Instruction 1", "Instruction 2", "Instruction 3"],
                             label="Instruction Selection",
+                            interactive=False
                         )
                     with gr.Column(scale=3, min_width=300):
                         selected_instruction = gr.Textbox(
                             label="Selected Instruction (editable)",
                             max_lines=5,
                             lines=5,
+                            interactive=False
                         )
-                emulate_human.change(update_state, inputs=[emulate_human], outputs=[selected_plan, selected_instruction])
-
             btn_step = gr.Button("Next Step", variant="primary")
 
     btn_init.click(
@@ -203,7 +185,7 @@ with gr.Blocks(title="RecurrentGPT", css="footer {visibility: hidden}", theme="d
             selected_instruction,
             written_paragraphs,
             model_name,
-            emulate_human
+            selection_mode
         ],
         outputs=[
             state,
@@ -217,10 +199,15 @@ with gr.Blocks(title="RecurrentGPT", css="footer {visibility: hidden}", theme="d
         ]
     )
     selected_plan.select(
-        on_select,
-        inputs=[instruction1, instruction2, instruction3], outputs=[selected_instruction]
+        on_selected_plan_select,
+        inputs=[instruction1, instruction2, instruction3],
+        outputs=[selected_instruction]
     )
-
+    selection_mode.select(
+        on_selection_mode_select,
+        inputs=[],
+        outputs=[selected_plan, selected_instruction]
+    )
     demo.queue(concurrency_count=1)
 
 

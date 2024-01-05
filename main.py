@@ -3,9 +3,9 @@ import json
 import fire
 from sentence_transformers import SentenceTransformer
 
-from utils import DEFAULT_MODEL, encode_prompt
-from recurrentgpt import RecurrentGPT, State, gen_init
-from human_simulator import Human
+from litgpt.utils import DEFAULT_MODEL, encode_prompt
+from litgpt.recurrentgpt import RecurrentGPT, State, gen_init_state
+from litgpt.human_simulator import Human
 
 
 def main(
@@ -15,36 +15,10 @@ def main(
     description: str = "",
     model_name: str = DEFAULT_MODEL
 ):
-    init_info = gen_init(
+    state = gen_init_state(
         novel_type=novel_type,
         description=description,
         model_name=model_name
-    )
-    first_paragraphs = '\n\n'.join([
-        init_info["paragraph_1"],
-        init_info["paragraph_2"],
-        init_info["paragraph_3"]
-    ])
-    written_paragraphs = encode_prompt(
-        "prompts/paragraphs.jinja",
-        name=init_info["name"],
-        outline=init_info["outline"],
-        first_paragraphs=first_paragraphs
-    )
-    state = State(
-        prev_paragraph=init_info["paragraph_2"],
-        last_paragraph=init_info["paragraph_3"],
-        short_memory=init_info["summary"],
-        long_memory=[
-            init_info["paragraph_1"],
-            init_info['paragraph_2']
-        ],
-        written_paragraphs=written_paragraphs,
-        next_instructions=[
-            init_info["instruction_1"],
-            init_info["instruction_2"],
-            init_info["instruction_3"]
-        ]
     )
     embedder = SentenceTransformer('multi-qa-mpnet-base-cos-v1')
     writer = RecurrentGPT(embedder=embedder, model_name=model_name)

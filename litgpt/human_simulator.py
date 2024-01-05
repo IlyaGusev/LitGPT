@@ -1,7 +1,7 @@
 import json
 
-from recurrentgpt import State
-from utils import novel_json_completion, encode_prompt
+from litgpt.recurrentgpt import State
+from litgpt.utils import novel_json_completion, encode_prompt
 
 
 class Human:
@@ -10,7 +10,7 @@ class Human:
 
     def select_plan(self, state: State):
         prompt = encode_prompt(
-            "prompts/human_select.jinja",
+            "human_select.jinja",
             previous_paragraph=state.prev_paragraph,
             memory=state.short_memory,
             writer_new_paragraph=state.last_paragraph,
@@ -30,7 +30,7 @@ class Human:
     def step(self, state: State):
         state.instruction = self.select_plan(state)
         prompt = encode_prompt(
-            "prompts/human_write.jinja",
+            "human_write.jinja",
             previous_paragraph=state.prev_paragraph,
             memory=state.short_memory,
             writer_new_paragraph=state.last_paragraph,
