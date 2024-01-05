@@ -13,20 +13,23 @@ def novel_completion(
     model_name: str = DEFAULT_MODEL,
     system_prompt: str = DEFAULT_SYSTEM_PROMPT
 ):
-    messages=[{
-        "role": "system",
-        "content": "You are a helpful and creative assistant for writing novel."
-    }, {
-        "role": "user",
-        "content": prompt,
-    }]
+    messages = [
+        {
+            "role": "system",
+            "content": "You are a helpful and creative assistant for writing novel."
+        },
+        {
+            "role": "user",
+            "content": prompt,
+        }
+    ]
     return openai_completion(messages, model_name=model_name)
 
 
 def parse_json_output(output):
     start_index = output.find("{")
     end_index = output.rfind("}")
-    text = output[start_index:end_index+1]
+    text = output[start_index:end_index + 1]
     text = text.strip()
     record = json.loads(text)
     return record
@@ -46,7 +49,7 @@ def novel_json_completion(
             )
             output = parse_json_output(response)
             break
-        except Exception as e:
+        except Exception:
             print("Retry...")
             traceback.print_exc()
             continue

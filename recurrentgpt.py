@@ -1,7 +1,7 @@
 import random
 import json
 from typing import List, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 import torch
 
@@ -28,6 +28,13 @@ class State:
     def parse_long_memory(self, long_memory_str):
         memories = long_memory_str.split("\n\n")
         self.long_memory = [".".join(m.split(".")[1:]).strip() for m in memories]
+
+    def to_dict(self):
+        memory_index = self.memory_index
+        self.memory_index = None
+        result = asdict(self)
+        self.memory_index = memory_index
+        return result
 
 
 class RecurrentGPT:
@@ -89,7 +96,7 @@ class RecurrentGPT:
         return state
 
 
-def get_init(description: str, novel_type: str, model_name: str):
+def gen_init(description: str, novel_type: str, model_name: str):
     init_prompt = encode_prompt(
         "prompts/init.jinja",
         description=description,

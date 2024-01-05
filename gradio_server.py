@@ -1,7 +1,7 @@
 import gradio as gr
 from sentence_transformers import SentenceTransformer
 
-from recurrentgpt import RecurrentGPT, State, get_init
+from recurrentgpt import RecurrentGPT, State, gen_init
 from utils import encode_prompt
 from human_simulator import Human
 
@@ -10,7 +10,7 @@ embedder = SentenceTransformer('multi-qa-mpnet-base-cos-v1')
 
 
 def init(state, novel_type, description, model_name):
-    init_info = get_init(novel_type, description, model_name=model_name)
+    init_info = gen_init(novel_type, description, model_name=model_name)
     first_paragraphs = '\n\n'.join([
         init_info["paragraph_1"],
         init_info["paragraph_2"],
@@ -114,8 +114,7 @@ with gr.Blocks(title="RecurrentGPT", css="footer {visibility: hidden}", theme="d
                             label="Novel type", placeholder="e.g. science fiction"
                         )
                     with gr.Column(scale=2, min_width=400):
-                        description = gr.Textbox(label="Description"
-                    )
+                        description = gr.Textbox(label="Description")
             btn_init = gr.Button(
                 "Init Novel Generation",
                 variant="primary"
