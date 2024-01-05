@@ -26,7 +26,7 @@ def init(state, novel_type, description, model_name):
 
 
 def step(state, short_memory, long_memory, selected_instruction, written_paragraphs, model_name, selection_mode):
-    writer = RecurrentGPT(embedder=embedder, model_name=model_name)
+    writer = RecurrentGPT(embedder=EMBEDDER, model_name=model_name)
 
     assert state is not None
     state.parse_long_memory(long_memory)
