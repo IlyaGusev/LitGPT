@@ -11,9 +11,9 @@ class Human:
     def select_plan(self, state: State):
         prompt = encode_prompt(
             "human_select.jinja",
-            previous_paragraph=state.prev_paragraph,
+            previous_paragraph=state.paragraphs[-2],
             memory=state.short_memory,
-            writer_new_paragraph=state.last_paragraph,
+            writer_new_paragraph=state.paragraphs[-1],
             previous_plans=state.next_instructions
         )
         print("HUMAN SELECT")
@@ -31,9 +31,9 @@ class Human:
         state.instruction = self.select_plan(state)
         prompt = encode_prompt(
             "human_write.jinja",
-            previous_paragraph=state.prev_paragraph,
+            previous_paragraph=state.paragraphs[-2],
             memory=state.short_memory,
-            writer_new_paragraph=state.last_paragraph,
+            writer_new_paragraph=state.paragraphs[-1],
             user_edited_plan=state.instruction
         )
         print("HUMAN STEP")
@@ -49,9 +49,6 @@ class Human:
         extended_paragraph = " ".join([p for p in extended_paragraph.split("\n") if p])
         extended_paragraph = extended_paragraph.strip()
 
-        state.last_paragraph = extended_paragraph
-        state.written_paragraphs = "\n\n".join(
-            state.written_paragraphs.strip().split("\n\n")[:-1] + [extended_paragraph]
-        )
+        state.paragraphs = state.paragraphs[:-1] + [extended_paragraph]
         state.instruction = output["revised_plan"]
         return state

@@ -13,26 +13,31 @@ DEFAULT_DESCRIPTION = "Роман на русском в сеттинге ком
 
 
 def init(state, novel_type, description, model_name):
-    state = gen_init_state(novel_type, description, model_name=model_name)
+    state = gen_init_state(
+        novel_type=novel_type,
+        description=description,
+        model_name=model_name
+    )
     return (
         state,
+        state.name,
+        state.global_summary,
+        state.global_plan,
         state.short_memory,
-        state.format_long_memory(),
-        state.written_paragraphs,
+        "\n\n".join(state.paragraphs),
         state.next_instructions[0],
         state.next_instructions[1],
         state.next_instructions[2],
     )
 
 
-def step(state, short_memory, long_memory, selected_instruction, written_paragraphs, model_name, selection_mode):
+def step(state, global_plan, short_memory, paragraphs, selected_instruction, model_name, selection_mode):
     writer = RecurrentGPT(embedder=EMBEDDER, model_name=model_name)
 
     assert state is not None
-    state.parse_long_memory(long_memory)
     state.instruction = selected_instruction
     state.short_memory = short_memory
-    state.written_paragraphs = written_paragraphs
+    state.paragraphs = [p.strip() for p in paragraphs.split("\n\n") if p.strip()]
 
     if selection_mode == "gpt":
         human = Human(model_name=model_name)
@@ -46,9 +51,9 @@ def step(state, short_memory, long_memory, selected_instruction, written_paragra
 
     return (
         state,
+        state.global_plan,
         state.short_memory,
-        state.format_long_memory(),
-        state.written_paragraphs,
+        "\n\n".join(state.paragraphs),
         state.next_instructions[0],
         state.next_instructions[1],
         state.next_instructions[2],
@@ -114,37 +119,49 @@ with gr.Blocks(title="LitGPT", css="footer {visibility: hidden}", theme="default
         )
 
     with gr.Row():
+        with gr.Column(scale=1):
+            name = gr.Textbox(
+                label="Name",
+                max_lines=3,
+                lines=3
+            )
+        with gr.Column(scale=4):
+            global_summary = gr.Textbox(
+                label="Global summary",
+                max_lines=3,
+                lines=3
+            )
+
+    with gr.Row():
         with gr.Column():
-            written_paragraphs = gr.Textbox(
+            paragraphs = gr.Textbox(
                 label="Written Paragraphs (editable)",
                 max_lines=25,
                 lines=25
             )
         with gr.Column():
-            with gr.Box():
-                gr.Markdown("### Memory Module\n")
-                short_memory = gr.Textbox(
-                    label="Short-Term Memory (editable)",
-                    max_lines=5,
-                    lines=5
-                )
-                long_memory = gr.Textbox(
-                    label="Long-Term Memory (editable)",
-                    max_lines=12,
-                    lines=12
-                )
+            global_plan = gr.Textbox(
+                label="Global plan (editable)",
+                max_lines=15,
+                lines=16
+            )
+            short_memory = gr.Textbox(
+                label="Short-Term Memory (editable)",
+                max_lines=5,
+                lines=6
+            )
 
     with gr.Box():
         gr.Markdown("### Instruction Module\n")
         with gr.Row():
             instruction1 = gr.Textbox(
-                label="Instruction 1", max_lines=6, lines=6, interactive=False
+                label="Instruction 1", max_lines=7, lines=7, interactive=False
             )
             instruction2 = gr.Textbox(
-                label="Instruction 2", max_lines=6, lines=6, interactive=False
+                label="Instruction 2", max_lines=7, lines=7, interactive=False
             )
             instruction3 = gr.Textbox(
-                label="Instruction 3", max_lines=6, lines=6, interactive=False
+                label="Instruction 3", max_lines=7, lines=7, interactive=False
             )
         with gr.Row():
             selection_mode = gr.Radio(
@@ -175,9 +192,11 @@ with gr.Blocks(title="LitGPT", css="footer {visibility: hidden}", theme="default
         inputs=[state, novel_type, description, model_name],
         outputs=[
             state,
+            name,
+            global_summary,
+            global_plan,
             short_memory,
-            long_memory,
-            written_paragraphs,
+            paragraphs,
             instruction1,
             instruction2,
             instruction3
@@ -187,18 +206,18 @@ with gr.Blocks(title="LitGPT", css="footer {visibility: hidden}", theme="default
         step,
         inputs=[
             state,
+            global_plan,
             short_memory,
-            long_memory,
+            paragraphs,
             selected_instruction,
-            written_paragraphs,
             model_name,
             selection_mode
         ],
         outputs=[
             state,
+            global_plan,
             short_memory,
-            long_memory,
-            written_paragraphs,
+            paragraphs,
             instruction1,
             instruction2,
             instruction3,
@@ -220,7 +239,7 @@ with gr.Blocks(title="LitGPT", css="footer {visibility: hidden}", theme="default
 
 if __name__ == "__main__":
     demo.launch(
-        server_port=8005,
+        server_port=8006,
         share=True,
         server_name="0.0.0.0",
         show_api=False

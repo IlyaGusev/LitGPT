@@ -20,7 +20,7 @@ def main(
         description=description,
         model_name=model_name
     )
-    embedder = SentenceTransformer('multi-qa-mpnet-base-cos-v1')
+    embedder = SentenceTransformer("multi-qa-mpnet-base-cos-v1")
     writer = RecurrentGPT(embedder=embedder, model_name=model_name)
     human = Human(model_name=model_name)
 

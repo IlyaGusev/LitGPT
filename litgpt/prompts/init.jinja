@@ -1,19 +1,22 @@
-Please write a {% if not novel_type %}Science Fiction{% else %}{{novel_type}}{% endif %} novel with this description:
-{% if description %}{{description}}{% else %}A novel about anything{% endif %}
+Please write a beginning of a {% if not novel_type %}Science Fiction{% else %}{{novel_type}}{% endif %} novel called "{{name}}" with this summary:
+{{outline}}
 
-Plan 50 chapters. Follow the format below precisely:
-
-Begin with the name of the novel.
-Next, write an outline for the first chapter. The outline should describe the background and the beginning of the novel.
-Write the first three paragraphs with their indication of the novel based on your outline.
+First, write the novel's first three paragraphs based on the global plan's first point.
+Each paragraph should contain from 6 to 10 sentences.
+Paragraphs should cover only the beginning of the first chapter.
 Write in a novelistic style and take your time to set the scene.
-Write a summary that captures the key information of the three paragraphs.
-Finally, write three different instructions for what to write next, each containing around five sentences. Each instruction should present a possible, interesting continuation of the story.
-The output should be outputted in JSON with following fields:
 
+Then, write a summary that captures the critical information of the three paragraphs.
+
+Finally, write 3 different instructions for what to write next, each containing around 5 sentences.
+Each instruction should present a possible, exciting story continuation that fits the global plan presented below.
+Output all the fields in the same language as the outline, including summary, paragraphs, and instructions.
+
+Global plan:
+{{global_plan}}
+
+The output should be in JSON with the following fields:
 {
-    "name": <name of the novel>,
-    "outline": <outline for the first chapter>,
     "paragraph_1": <content for paragraph 1>,
     "paragraph_2": <content for paragraph 2>,
     "paragraph_3":  <content for paragraph 3>,
@@ -22,5 +25,3 @@ The output should be outputted in JSON with following fields:
     "instruction_2": content for instruction 2>,
     "instruction_3": <content for instruction 3>
 }
-
-Make sure to be precise and follow the output format strictly
