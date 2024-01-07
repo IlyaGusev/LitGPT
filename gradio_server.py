@@ -1,13 +1,18 @@
 import random
 import gradio as gr
-from sentence_transformers import SentenceTransformer
 
 from litgpt.recurrentgpt import RecurrentGPT, State, gen_init_state
 from litgpt.utils import encode_prompt
 from litgpt.human_simulator import Human
 
 
-EMBEDDER = SentenceTransformer('multi-qa-mpnet-base-cos-v1')
+MODEL_LIST = ["gpt-3.5-turbo-16k", "gpt-4-1106-preview", "gguf_neural-chat-7b-v3-3"]
+DEFAULT_MODEL_NAME = "gpt-3.5-turbo-16k"
+EMBEDDER_LIST = [
+    "embaas/sentence-transformers-multilingual-e5-base",
+    "sentence-transformers/multi-qa-mpnet-base-cos-v1"
+]
+DEFAULT_EMBEDDER_NAME = "embaas/sentence-transformers-multilingual-e5-base"
 DEFAULT_NOVEL_TYPE = "Science Fiction"
 DEFAULT_DESCRIPTION = "Роман на русском в сеттинге коммунизма в высокотехнологичном будущем. Сюжет придумай сам."
 
@@ -31,8 +36,17 @@ def init(state, novel_type, description, model_name):
     )
 
 
-def step(state, global_plan, short_memory, paragraphs, selected_instruction, model_name, selection_mode):
-    writer = RecurrentGPT(embedder=EMBEDDER, model_name=model_name)
+def step(
+    state,
+    global_plan,
+    short_memory,
+    paragraphs,
+    selected_instruction,
+    model_name,
+    embedder_name,
+    selection_mode
+):
+    writer = RecurrentGPT(embedder_name=embedder_name, model_name=model_name)
 
     assert state is not None
     state.instruction = selected_instruction
@@ -83,11 +97,17 @@ with gr.Blocks(title="LitGPT", css="footer {visibility: hidden}", theme="default
         with gr.Row():
             with gr.Column(scale=1, min_width=200):
                 model_name = gr.Dropdown(
-                    ["gpt-3.5-turbo-16k", "gpt-4-1106-preview"],
-                    value="gpt-3.5-turbo-16k",
+                    MODEL_LIST,
+                    value=DEFAULT_MODEL_NAME,
                     multiselect=False,
                     label="Model name",
-                 )
+                )
+                embedder_name = gr.Dropdown(
+                    EMBEDDER_LIST,
+                    value=DEFAULT_EMBEDDER_NAME,
+                    multiselect=False,
+                    label="Embedder name",
+                )
             with gr.Column(scale=1, min_width=200):
                 novel_type = gr.Textbox(
                     label="Novel type",
@@ -211,6 +231,7 @@ with gr.Blocks(title="LitGPT", css="footer {visibility: hidden}", theme="default
             paragraphs,
             selected_instruction,
             model_name,
+            embedder_name,
             selection_mode
         ],
         outputs=[

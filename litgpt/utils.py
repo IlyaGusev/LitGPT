@@ -4,6 +4,8 @@ import pathlib
 
 import torch
 from litgpt.openai_wrapper import openai_completion, encode_prompt, DEFAULT_MODEL
+from litgpt.gguf_wrapper import alpaca_gguf_completion
+from litgpt.tgi_wrapper import alpaca_tgi_completion
 
 
 DEFAULT_SYSTEM_PROMPT = "You are a helpful and creative assistant for writing novel."
@@ -24,6 +26,11 @@ def novel_completion(
             "content": prompt,
         }
     ]
+    if model_name.startswith("gguf_"):
+        model_name = model_name.replace("gguf_", "")
+        return alpaca_gguf_completion(messages, model_name=model_name)
+    if model_name == "tgi":
+        return alpaca_tgi_completion(messages)
     return openai_completion(messages, model_name=model_name)
 
 
@@ -41,6 +48,7 @@ def novel_json_completion(
     model_name: str = DEFAULT_MODEL,
     system_prompt: str = DEFAULT_SYSTEM_PROMPT
 ):
+    response = None
     while True:
         try:
             response = novel_completion(
@@ -51,8 +59,10 @@ def novel_json_completion(
             output = parse_json_output(response)
             break
         except Exception:
-            print("Retry...")
+            if response:
+                print(f"Response: {response}")
             traceback.print_exc()
+            print("Retry...")
             continue
     return output
 

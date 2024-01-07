@@ -4,6 +4,7 @@ from typing import List, Optional
 from dataclasses import dataclass, asdict
 
 import torch
+from sentence_transformers import SentenceTransformer
 
 from litgpt.utils import novel_json_completion, encode_prompt, cos_sim
 
@@ -23,7 +24,8 @@ class State:
     def long_memory(self):
         return self.paragraphs[:-1]
 
-    def update_index(self, embedder):
+    def update_index(self, embedder, passage_prefix):
+        long_memory = [passage_prefix + p for p in self.long_memory]
         self.memory_index = embedder.encode(self.long_memory, convert_to_tensor=True)
 
     def to_dict(self):
@@ -35,12 +37,15 @@ class State:
 
 
 class RecurrentGPT:
-    def __init__(self, embedder, model_name: str = "gpt-3.5-turbo"):
-        self.embedder = embedder
+    def __init__(self, embedder, model_name: str, embedder_name: str):
         self.model_name = model_name
+        self.embedder_name = embedder_name
+        self.embedder = SentenceTransformer(embedder_name)
+        self.query_prefix = "query: "
+        self.passage_prefix = "passage: "
 
     def get_relevant_long_memory(self, instruction, long_memory, memory_index, top_k: int = 2):
-        instruction_embedding = self.embedder.encode(instruction, convert_to_tensor=True)
+        instruction_embedding = self.embedder.encode(self.query_prefix + instruction, convert_to_tensor=True)
         memory_scores = cos_sim(instruction_embedding, memory_index)[0]
         top_k_idx = torch.topk(memory_scores, k=top_k)[1]
         top_k_memory = [long_memory[idx] for idx in top_k_idx]
@@ -49,7 +54,7 @@ class RecurrentGPT:
     def step(self, state: State):
         assert state.instruction
 
-        state.update_index(self.embedder)
+        state.update_index(self.embedder, self.passage_prefix)
         formatted_long_memory = self.get_relevant_long_memory(
             state.instruction,
             state.long_memory,
@@ -77,7 +82,7 @@ class RecurrentGPT:
         output_paragraph = " ".join([p for p in output["output_paragraph"].split("\n") if p])
         output_paragraph = output_paragraph.strip()
         state.paragraphs.append(output_paragraph)
-        state.update_index(self.embedder)
+        state.update_index(self.embedder, self.passage_prefix)
 
         state.next_instructions = [
             output["instruction_1"].strip(),
