@@ -1,3 +1,4 @@
+import requests
 from llama_cpp import Llama
 
 from litgpt.model_templates import alpaca_completion
@@ -12,15 +13,15 @@ def tgi_completion(
     top_k: int = 30,
     top_p: float = 0.9,
     temperature: float = 1.0,
-    repeat_penalty: float = 1.1
+    repetition_penalty: float = 1.1
 ):
     data = {
         "inputs": prompt,
         "parameters": {
             "max_new_tokens": max_new_tokens,
-            "repetition_penalty": rep_penalty,
+            "repetition_penalty": repetition_penalty,
             "do_sample": True,
-            "temperature": temp,
+            "temperature": temperature,
             "seed": 42,
             "top_p": top_p,
             "top_k": top_k,

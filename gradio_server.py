@@ -6,7 +6,7 @@ from litgpt.utils import encode_prompt
 from litgpt.human_simulator import Human
 
 
-MODEL_LIST = ["gpt-3.5-turbo-16k", "gpt-4-1106-preview", "gguf_neural-chat-7b-v3-3"]
+MODEL_LIST = ["gpt-3.5-turbo-16k", "gpt-4-1106-preview", "gguf_neural-chat-7b-v3-3", "tgi"]
 DEFAULT_MODEL_NAME = "gpt-3.5-turbo-16k"
 EMBEDDER_LIST = [
     "embaas/sentence-transformers-multilingual-e5-base",
