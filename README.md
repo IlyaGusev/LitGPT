@@ -1,6 +1,11 @@
-# LitGPT
+# TaleStudio
 
 Refactored fork of RecurrentGPT
+
+Clone the repo:
+```bash
+git clone https://github.com/IlyaGusev/TaleStudio/
+```
 
 Install requirements:
 ```bash
