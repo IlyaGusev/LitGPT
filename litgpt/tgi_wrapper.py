@@ -1,13 +1,16 @@
+from typing import List, Dict
+
 import requests
 from llama_cpp import Llama
 
-from litgpt.model_templates import alpaca_completion
+from litgpt.prompt_templates import PROMPT_TEMPLATES
 
 DEFAULT_URL = "http://127.0.0.1:8000/generate"
 
 
 def tgi_completion(
-    prompt: str,
+    messages: List[Dict[str, str]],
+    prompt_template: str,
     url: str = DEFAULT_URL,
     max_new_tokens: int = 4096,
     top_k: int = 30,
@@ -15,6 +18,7 @@ def tgi_completion(
     temperature: float = 1.0,
     repetition_penalty: float = 1.1
 ):
+    prompt = PROMPT_TEMPLATES[prompt_template](messages)
     data = {
         "inputs": prompt,
         "parameters": {

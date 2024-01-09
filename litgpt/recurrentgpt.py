@@ -37,9 +37,10 @@ class State:
 
 
 class RecurrentGPT:
-    def __init__(self, model_name: str, embedder_name: str):
+    def __init__(self, model_name: str, embedder_name: str, prompt_template: str):
         self.model_name = model_name
         self.embedder_name = embedder_name
+        self.prompt_template = prompt_template
         self.embedder = SentenceTransformer(embedder_name)
         self.query_prefix = "query: "
         self.passage_prefix = "passage: "
@@ -74,7 +75,7 @@ class RecurrentGPT:
         print(prompt)
         print()
 
-        output = novel_json_completion(prompt, model_name=self.model_name)
+        output = novel_json_completion(prompt, self.model_name, self.prompt_template)
         print("STEP OUTPUT")
         print(json.dumps(output, ensure_ascii=False, indent=4))
         print("===========")
@@ -93,7 +94,12 @@ class RecurrentGPT:
         return state
 
 
-def gen_init_state(description: str, novel_type: str, model_name: str):
+def gen_init_state(
+    description: str,
+    novel_type: str,
+    model_name: str,
+    prompt_template: str
+):
     plan_prompt = encode_prompt(
         "plan.jinja",
         description=description,
@@ -102,7 +108,7 @@ def gen_init_state(description: str, novel_type: str, model_name: str):
     print("PLAN PROMPT")
     print(plan_prompt)
     print()
-    plan_info = novel_json_completion(plan_prompt, model_name)
+    plan_info = novel_json_completion(plan_prompt, model_name, prompt_template)
     print("PLAN OUTPUT")
     print(json.dumps(plan_info, ensure_ascii=False, indent=4))
     print("===========")
@@ -121,7 +127,7 @@ def gen_init_state(description: str, novel_type: str, model_name: str):
     print("INIT PROMPT")
     print(init_prompt)
     print()
-    init_info = novel_json_completion(init_prompt, model_name)
+    init_info = novel_json_completion(init_prompt, model_name, prompt_template)
     print("INIT OUTPUT")
     print(json.dumps(init_info, ensure_ascii=False, indent=4))
     print("===========")

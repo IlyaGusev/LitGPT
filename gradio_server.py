@@ -6,6 +6,7 @@ from litgpt.recurrentgpt import RecurrentGPT, State, gen_init_state
 from litgpt.utils import encode_prompt, OPENAI_MODELS
 from litgpt.human_simulator import Human
 from litgpt.files import LOCAL_MODELS_LIST
+from litgpt.prompt_templates import PROMPT_TEMPLATE_LIST, DEFAULT_PROMPT_TEMPLATE_NAME
 
 MODEL_LIST = list(OPENAI_MODELS) + list(LOCAL_MODELS_LIST)
 DEFAULT_MODEL_NAME = "gpt-3.5-turbo-16k"
@@ -18,11 +19,15 @@ DEFAULT_NOVEL_TYPE = "Science Fiction"
 DEFAULT_DESCRIPTION = "Рассказ на русском в сеттинге коммунизма в высокотехнологичном будущем"
 
 
-def init(state, novel_type, description, model_name):
+def init(state, novel_type, description, model_name, prompt_template):
+    if prompt_template == "openai" and model_name not in OPENAI_MODELS:
+        raise gr.Error("Please set correct prompt_template")
+
     state = gen_init_state(
         novel_type=novel_type,
         description=description,
-        model_name=model_name
+        model_name=model_name,
+        prompt_template=prompt_template
     )
     return (
         state,
@@ -44,10 +49,15 @@ def step(
     paragraphs,
     selected_instruction,
     model_name,
+    prompt_template,
     embedder_name,
     selection_mode
 ):
-    writer = RecurrentGPT(embedder_name=embedder_name, model_name=model_name)
+    writer = RecurrentGPT(
+        embedder_name=embedder_name,
+        model_name=model_name,
+        prompt_template=prompt_template
+    )
 
     assert state is not None
     state.instruction = selected_instruction
@@ -109,6 +119,13 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}", theme="def
                     multiselect=False,
                     label="Embedder name",
                 )
+                prompt_template = gr.Dropdown(
+                    PROMPT_TEMPLATE_LIST,
+                    value=DEFAULT_PROMPT_TEMPLATE_NAME,
+                    multiselect=False,
+                    label="Prompt template",
+                )
+
             with gr.Column(scale=1, min_width=200):
                 novel_type = gr.Textbox(
                     label="Novel type",
@@ -213,7 +230,7 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}", theme="def
 
     btn_init.click(
         init,
-        inputs=[state, novel_type, description, model_name],
+        inputs=[state, novel_type, description, model_name, prompt_template],
         outputs=[
             state,
             name,
@@ -235,6 +252,7 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}", theme="def
             paragraphs,
             selected_instruction,
             model_name,
+            prompt_template,
             embedder_name,
             selection_mode
         ],
@@ -267,5 +285,6 @@ if __name__ == "__main__":
         server_port=8006,
         share=True,
         server_name="0.0.0.0",
-        show_api=False
+        show_api=False,
+        show_error=True
     )

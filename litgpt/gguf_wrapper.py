@@ -1,6 +1,8 @@
+from typing import List, Dict
+
 from llama_cpp import Llama
 
-from litgpt.model_templates import alpaca_completion
+from litgpt.prompt_templates import PROMPT_TEMPLATES
 from litgpt.files import MODELS_DIR_PATH
 
 
@@ -8,26 +10,33 @@ class GGUFModels:
     models = dict()
 
     @classmethod
-    def get_model(cls, model_name: str):
+    def get_model(cls, model_name: str, n_gpu_layers: int = -1, n_ctx: int = 16384):
         if model_name not in cls.models:
             cls.models[model_name] = Llama(
                 model_path=str(MODELS_DIR_PATH / model_name),
-                n_parts=1,
-                n_ctx=16384,
-                n_gpu_layers=1000
+                n_ctx=n_ctx,
+                n_gpu_layers=n_gpu_layers
             )
         return cls.models[model_name]
 
 
 def gguf_completion(
-    prompt: str,
+    messages: List[Dict[str, str]],
     model_name: str,
+    prompt_template: str,
     top_k: int = 30,
     top_p: float = 0.95,
     temperature: float = 0.5,
     repetition_penalty: float = 1.1,
+    n_ctx: int = 16384,
+    n_gpu_layers: int = -1
 ):
-    model = GGUFModels.get_model(model_name)
+    prompt = PROMPT_TEMPLATES[prompt_template](messages)
+    model = GGUFModels.get_model(
+        model_name,
+        n_ctx=n_ctx,
+        n_gpu_layers=n_gpu_layers
+    )
     tokens = model.tokenize(prompt.encode("utf-8"), special=True)
     generator = model.generate(
         tokens,
@@ -42,11 +51,3 @@ def gguf_completion(
         if token == model.token_eos():
             break
     return model.detokenize(tokens).decode("utf-8", errors="ignore")
-
-
-def alpaca_gguf_completion(messages, model_name: str):
-    return alpaca_completion(
-        func=gguf_completion,
-        messages=messages,
-        model_name=model_name
-    )

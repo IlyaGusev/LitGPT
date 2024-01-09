@@ -3,8 +3,8 @@ import traceback
 
 import torch
 from litgpt.openai_wrapper import openai_completion, encode_prompt, DEFAULT_MODEL, OPENAI_MODELS
-from litgpt.gguf_wrapper import alpaca_gguf_completion
-from litgpt.tgi_wrapper import alpaca_tgi_completion
+from litgpt.gguf_wrapper import gguf_completion
+from litgpt.tgi_wrapper import tgi_completion
 
 
 DEFAULT_SYSTEM_PROMPT = "You are a helpful and creative assistant for writing novel."
@@ -12,7 +12,8 @@ DEFAULT_SYSTEM_PROMPT = "You are a helpful and creative assistant for writing no
 
 def novel_completion(
     prompt: str,
-    model_name: str = DEFAULT_MODEL,
+    prompt_template: str,
+    model_name: str,
     system_prompt: str = DEFAULT_SYSTEM_PROMPT
 ):
     messages = [
@@ -26,10 +27,14 @@ def novel_completion(
         }
     ]
     if model_name == "tgi":
-        return alpaca_tgi_completion(messages)
+        return tgi_completion(messages, prompt_template=prompt_template)
     if model_name in OPENAI_MODELS:
         return openai_completion(messages, model_name=model_name)
-    return alpaca_gguf_completion(messages, model_name=model_name)
+    return gguf_completion(
+        messages,
+        model_name=model_name,
+        prompt_template=prompt_template
+    )
 
 
 def parse_json_output(output):
@@ -43,7 +48,8 @@ def parse_json_output(output):
 
 def novel_json_completion(
     prompt: str,
-    model_name: str = DEFAULT_MODEL,
+    model_name: str,
+    prompt_template: str,
     system_prompt: str = DEFAULT_SYSTEM_PROMPT
 ):
     response = None
@@ -52,6 +58,7 @@ def novel_json_completion(
             response = novel_completion(
                 prompt=prompt,
                 model_name=model_name,
+                prompt_template=prompt_template,
                 system_prompt=system_prompt
             )
             output = parse_json_output(response)
