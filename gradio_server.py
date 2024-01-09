@@ -5,7 +5,6 @@ import gradio as gr
 from litgpt.recurrentgpt import RecurrentGPT, State, gen_init_state
 from litgpt.utils import encode_prompt, OPENAI_MODELS
 from litgpt.human_simulator import Human
-from litgpt.openai_wrapper import OPENAI_MODELS
 from litgpt.files import LOCAL_MODELS_LIST
 
 MODEL_LIST = list(OPENAI_MODELS) + list(LOCAL_MODELS_LIST)

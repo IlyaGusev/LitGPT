@@ -26,7 +26,7 @@ class State:
 
     def update_index(self, embedder, passage_prefix):
         long_memory = [passage_prefix + p for p in self.long_memory]
-        self.memory_index = embedder.encode(self.long_memory, convert_to_tensor=True)
+        self.memory_index = embedder.encode(long_memory, convert_to_tensor=True)
 
     def to_dict(self):
         memory_index = self.memory_index
@@ -108,7 +108,6 @@ def gen_init_state(description: str, novel_type: str, model_name: str):
     print("===========")
 
     global_summary = plan_info["summary"]
-    first_summary = plan_info["chapter_summaries"][0]
     global_plan = "\n".join(plan_info["chapter_summaries"])
 
     init_prompt = encode_prompt(
