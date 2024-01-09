@@ -37,7 +37,7 @@ class State:
 
 
 class RecurrentGPT:
-    def __init__(self, embedder, model_name: str, embedder_name: str):
+    def __init__(self, model_name: str, embedder_name: str):
         self.model_name = model_name
         self.embedder_name = embedder_name
         self.embedder = SentenceTransformer(embedder_name)
