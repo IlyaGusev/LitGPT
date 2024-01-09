@@ -1,9 +1,8 @@
 import json
 import traceback
-import pathlib
 
 import torch
-from litgpt.openai_wrapper import openai_completion, encode_prompt, DEFAULT_MODEL
+from litgpt.openai_wrapper import openai_completion, encode_prompt, DEFAULT_MODEL, OPENAI_MODELS
 from litgpt.gguf_wrapper import alpaca_gguf_completion
 from litgpt.tgi_wrapper import alpaca_tgi_completion
 
@@ -19,19 +18,18 @@ def novel_completion(
     messages = [
         {
             "role": "system",
-            "content": "You are a helpful and creative assistant for writing novel."
+            "content": system_prompt
         },
         {
             "role": "user",
             "content": prompt,
         }
     ]
-    if model_name.startswith("gguf_"):
-        model_name = model_name.replace("gguf_", "")
-        return alpaca_gguf_completion(messages, model_name=model_name)
     if model_name == "tgi":
         return alpaca_tgi_completion(messages)
-    return openai_completion(messages, model_name=model_name)
+    if model_name in OPENAI_MODELS:
+        return openai_completion(messages, model_name=model_name)
+    return alpaca_gguf_completion(messages, model_name=model_name)
 
 
 def parse_json_output(output):

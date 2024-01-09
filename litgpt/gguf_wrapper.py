@@ -1,9 +1,7 @@
 from llama_cpp import Llama
-from litgpt.model_templates import alpaca_completion
 
-MODEL2PATH = {
-    "neural-chat-7b-v3-3": "models/neural-chat-7b-v3-3.Q5_K_M.gguf"
-}
+from litgpt.model_templates import alpaca_completion
+from litgpt.files import MODELS_DIR_PATH
 
 
 class GGUFModels:
@@ -13,9 +11,10 @@ class GGUFModels:
     def get_model(cls, model_name: str):
         if model_name not in cls.models:
             cls.models[model_name] = Llama(
-                model_path=MODEL2PATH[model_name],
+                model_path=str(MODELS_DIR_PATH / model_name),
                 n_parts=1,
-                n_ctx=16384
+                n_ctx=16384,
+                n_gpu_layers=1000
             )
         return cls.models[model_name]
 

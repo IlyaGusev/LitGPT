@@ -1,12 +1,14 @@
 import random
+import os
 import gradio as gr
 
 from litgpt.recurrentgpt import RecurrentGPT, State, gen_init_state
-from litgpt.utils import encode_prompt
+from litgpt.utils import encode_prompt, OPENAI_MODELS
 from litgpt.human_simulator import Human
+from litgpt.openai_wrapper import OPENAI_MODELS
+from litgpt.files import LOCAL_MODELS_LIST
 
-
-MODEL_LIST = ["gpt-3.5-turbo-16k", "gpt-4-1106-preview", "gguf_neural-chat-7b-v3-3", "tgi"]
+MODEL_LIST = list(OPENAI_MODELS) + list(LOCAL_MODELS_LIST)
 DEFAULT_MODEL_NAME = "gpt-3.5-turbo-16k"
 EMBEDDER_LIST = [
     "embaas/sentence-transformers-multilingual-e5-base",
@@ -14,7 +16,7 @@ EMBEDDER_LIST = [
 ]
 DEFAULT_EMBEDDER_NAME = "embaas/sentence-transformers-multilingual-e5-base"
 DEFAULT_NOVEL_TYPE = "Science Fiction"
-DEFAULT_DESCRIPTION = "Роман на русском в сеттинге коммунизма в высокотехнологичном будущем. Сюжет придумай сам."
+DEFAULT_DESCRIPTION = "Рассказ на русском в сеттинге коммунизма в высокотехнологичном будущем"
 
 
 def init(state, novel_type, description, model_name):
@@ -90,9 +92,9 @@ def on_selection_mode_select(evt: gr.SelectData):
     )
 
 
-with gr.Blocks(title="LitGPT", css="footer {visibility: hidden}", theme="default") as demo:
+with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}", theme="default") as demo:
     state = gr.State(None)
-    gr.Markdown("# LitGPT")
+    gr.Markdown("# Tale Studio")
     with gr.Box():
         with gr.Row():
             with gr.Column(scale=1, min_width=200):
@@ -128,9 +130,12 @@ with gr.Blocks(title="LitGPT", css="footer {visibility: hidden}", theme="default
                 description = gr.Textbox(label="Description", value=DEFAULT_DESCRIPTION)
                 gr.Examples([
                     "A novel about aliens",
-                    "Роман на русском в сеттинге коммунизма в высокотехнологичном будущем",
-                    "Рассказ на русском об инопланетных грибах, стилизованный под справочник",
                     "A love story of a man and AI",
+                    "Dystopian society with a twist",
+                    "Contemporary coming-of-age story",
+                    "Magical realism in a small American town",
+                    "Рассказ на русском в сеттинге коммунизма в высокотехнологичном будущем",
+                    "История на русском об Англии 19 века и колониализме"
                 ], inputs=[description])
     with gr.Row():
         btn_init = gr.Button(

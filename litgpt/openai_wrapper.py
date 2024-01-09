@@ -9,8 +9,10 @@ from multiprocessing.pool import ThreadPool
 import openai
 from jinja2 import Template
 
-DIR_PATH = pathlib.Path(__file__).parent.resolve()
-PROMPTS_DIR_PATH = DIR_PATH / "prompts"
+from litgpt.files import PROMPTS_DIR_PATH
+
+
+OPENAI_MODELS = ("gpt-3.5-turbo-16k", "gpt-4-1106-preview")
 
 
 @dataclass
