@@ -67,7 +67,7 @@ def step(
     model_name,
     prompt_template,
     embedder_name,
-    selection_mode
+    selection_mode,
 ):
     writer = RecurrentGPT(
         embedder_name=embedder_name,
@@ -112,6 +112,11 @@ def save(
     short_memory,
     paragraphs,
 ):
+    if not file_name:
+        raise gr.Error("File name should not be empty")
+    if not name:
+        raise gr.Error("Please set a name of the story")
+
     state.name = name
     state.synopsis = synopsis
     state.plan = plan
@@ -120,6 +125,22 @@ def save(
     f = NamedTemporaryFile(mode="w", suffix=".json", delete=False)
     with open(os.path.join(root_dir, file_name), "w") as w:
         json.dump(state.to_dict(), w, ensure_ascii=False, indent=4)
+
+
+def load(file_name):
+    with open(file_name) as r:
+        state = State.from_dict(json.load(r))
+    return (
+        state,
+        state.name,
+        state.synopsis,
+        state.plan,
+        state.short_memory,
+        "\n\n".join(state.paragraphs),
+        state.next_instructions[0],
+        state.next_instructions[1],
+        state.next_instructions[2],
+    )
 
 
 def on_selected_plan_select(instruction1, instruction2, instruction3, evt: gr.SelectData):
@@ -260,11 +281,20 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
         btn_step = gr.Button("Next Step", variant="primary")
     with gr.Row():
         btn_save = gr.Button("Save", variant="primary")
+        btn_load = gr.UploadButton("Load", variant="primary")
 
     with gr.Group(visible=False) as file_saver:
-        save_filename = gr.Textbox(lines=1, label='File name')
-        save_root = gr.Textbox(lines=1, label='File folder', info='For reference. Unchangeable.', interactive=False, value="saves/")
-        btn_confirm_save = gr.Button("Confirm", variant="primary")
+        save_filename = gr.Textbox(lines=1, label="File name")
+        save_root = gr.Textbox(
+            lines=1,
+            label="File folder",
+            info="For reference. Unchangeable.",
+            interactive=False,
+            value="saves/"
+        )
+        with gr.Row():
+            btn_confirm_save = gr.Button("Confirm", variant="primary")
+            btn_close_save = gr.Button("Close", variant="warning")
 
     btn_init.click(
         generate_plan,
@@ -287,7 +317,7 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
             model_name,
             prompt_template,
             embedder_name,
-            selection_mode
+            selection_mode,
         ],
         outputs=[
             state,
@@ -301,8 +331,8 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
         ]
     )
     btn_save.click(
-        lambda: gr.update(visible=True),
-        outputs=[file_saver]
+        lambda: (gr.update(visible=True), gr.update(visible=False)),
+        outputs=[file_saver, btn_save]
     )
     btn_confirm_save.click(
         save,
@@ -316,9 +346,28 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
             short_memory,
             paragraphs,
         ]
-    ).then(
-        lambda: gr.update(visible=False),
-        outputs=[file_saver]
+    ).success(
+        lambda: (gr.update(visible=False), gr.update(visible=True)),
+        outputs=[file_saver, btn_save]
+    )
+    btn_close_save.click(
+        lambda: (gr.update(visible=False), gr.update(visible=True)),
+        outputs=[file_saver, btn_save]
+    )
+    btn_load.upload(
+        load,
+        inputs=[btn_load],
+        outputs=[
+            state,
+            name,
+            synopsis,
+            plan,
+            short_memory,
+            paragraphs,
+            instruction1,
+            instruction2,
+            instruction3,
+        ]
     )
     selected_plan.select(
         on_selected_plan_select,

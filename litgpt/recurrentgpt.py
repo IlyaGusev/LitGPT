@@ -37,6 +37,10 @@ class State:
         self.memory_index = memory_index
         return result
 
+    @classmethod
+    def from_dict(cls, d):
+        return cls(**d)
+
 
 class EmbeddersStorage:
     embedders = dict()
