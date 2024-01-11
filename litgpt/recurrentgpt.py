@@ -1,7 +1,7 @@
 import random
 import json
 from typing import List, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 
 import torch
 from sentence_transformers import SentenceTransformer
@@ -12,13 +12,15 @@ from litgpt.utils import novel_json_completion, encode_prompt, cos_sim
 @dataclass
 class State:
     name: str
-    global_summary: str
-    global_plan: str
-    paragraphs: List[str]
-    short_memory: str
+    synopsis: str
+    plan: str = ""
+    novel_type: str = ""
+    description: str = ""
+    paragraphs: List[str] = field(default_factory=lambda: list())
+    short_memory: str = ""
     memory_index: Optional[torch.Tensor] = None
-    instruction: Optional[str] = None
-    next_instructions: List[str] = None
+    instruction: str = ""
+    next_instructions: List[str] = field(default_factory=lambda: list())
 
     @property
     def long_memory(self):
@@ -36,12 +38,22 @@ class State:
         return result
 
 
+class EmbeddersStorage:
+    embedders = dict()
+
+    @classmethod
+    def get_embedder(cls, embedder_name: str):
+        if embedder_name not in cls.embedders:
+            cls.embedders[embedder_name] = SentenceTransformer(embedder_name)
+        return cls.embedders[embedder_name]
+
+
 class RecurrentGPT:
     def __init__(self, model_name: str, embedder_name: str, prompt_template: str):
         self.model_name = model_name
         self.embedder_name = embedder_name
         self.prompt_template = prompt_template
-        self.embedder = SentenceTransformer(embedder_name)
+        self.embedder = EmbeddersStorage.get_embedder(embedder_name)
         self.query_prefix = "query: "
         self.passage_prefix = "passage: "
 
@@ -64,7 +76,7 @@ class RecurrentGPT:
 
         prompt = encode_prompt(
             "step.jinja",
-            global_plan=state.global_plan,
+            plan=state.plan,
             short_memory=state.short_memory,
             input_paragraph=state.paragraphs[-1],
             num_paragraphs=len(state.paragraphs),
@@ -93,60 +105,60 @@ class RecurrentGPT:
         state.short_memory = output["updated_memory"]
         return state
 
+    def generate_plan(
+        self,
+        description: str,
+        novel_type: str,
+    ):
+        plan_prompt = encode_prompt(
+            "plan.jinja",
+            description=description,
+            novel_type=novel_type
+        )
+        print("PLAN PROMPT")
+        print(plan_prompt)
+        print()
+        plan_info = novel_json_completion(plan_prompt, self.model_name, self.prompt_template)
+        print("PLAN OUTPUT")
+        print(json.dumps(plan_info, ensure_ascii=False, indent=4))
+        print("===========")
 
-def gen_init_state(
-    description: str,
-    novel_type: str,
-    model_name: str,
-    prompt_template: str
-):
-    plan_prompt = encode_prompt(
-        "plan.jinja",
-        description=description,
-        novel_type=novel_type
-    )
-    print("PLAN PROMPT")
-    print(plan_prompt)
-    print()
-    plan_info = novel_json_completion(plan_prompt, model_name, prompt_template)
-    print("PLAN OUTPUT")
-    print(json.dumps(plan_info, ensure_ascii=False, indent=4))
-    print("===========")
+        return State(
+            name=plan_info["name"],
+            synopsis=plan_info["synopsis"],
+            plan="\n".join(plan_info["chapter_summaries"]),
+            novel_type=novel_type,
+            description=description
+        )
 
-    global_summary = plan_info["summary"]
-    global_plan = "\n".join(plan_info["chapter_summaries"])
+    def generate_first_paragraphs(
+        self,
+        state: State
+    ):
+        init_prompt = encode_prompt(
+            "init.jinja",
+            novel_type=state.novel_type,
+            plan=state.plan,
+            name=state.name,
+            synopsis=state.synopsis,
+        )
+        print("INIT PROMPT")
+        print(init_prompt)
+        print()
+        init_info = novel_json_completion(init_prompt, self.model_name, self.prompt_template)
+        print("INIT OUTPUT")
+        print(json.dumps(init_info, ensure_ascii=False, indent=4))
+        print("===========")
 
-    init_prompt = encode_prompt(
-        "init.jinja",
-        description=description,
-        novel_type=novel_type,
-        global_plan=global_plan,
-        name=plan_info["name"],
-        outline=global_summary,
-    )
-    print("INIT PROMPT")
-    print(init_prompt)
-    print()
-    init_info = novel_json_completion(init_prompt, model_name, prompt_template)
-    print("INIT OUTPUT")
-    print(json.dumps(init_info, ensure_ascii=False, indent=4))
-    print("===========")
-
-    state = State(
-        name=plan_info["name"],
-        global_summary=global_summary,
-        short_memory=init_info["summary"],
-        global_plan="\n".join(plan_info["chapter_summaries"]),
-        paragraphs=[
+        state.short_memory = init_info["summary"]
+        state.paragraphs = [
             init_info["paragraph_1"],
             init_info["paragraph_2"],
             init_info["paragraph_3"]
-        ],
-        next_instructions=[
+        ]
+        state.next_instructions = [
             init_info["instruction_1"],
             init_info["instruction_2"],
             init_info["instruction_3"]
         ]
-    )
-
-    return state
+        return state

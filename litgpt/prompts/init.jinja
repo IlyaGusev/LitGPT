@@ -1,5 +1,5 @@
-Please write a beginning of a {% if not novel_type %}Science Fiction{% else %}{{novel_type}}{% endif %} novel called "{{name}}" with this summary:
-{{outline}}
+Please write a beginning of a {% if not novel_type %}Science Fiction{% else %}{{novel_type}}{% endif %} novel called "{{name}}" with this synopsis:
+{{synopsis}}
 
 First, write the novel's first three paragraphs based on the global plan's first point.
 Each paragraph should contain from 6 to 10 sentences.
@@ -13,7 +13,7 @@ Each instruction should present a possible, exciting story continuation that fit
 Output all the fields in the same language as the outline, including summary, paragraphs, and instructions.
 
 Global plan:
-{{global_plan}}
+{{plan}}
 
 The output should be in JSON with the following fields:
 {

@@ -1,8 +1,12 @@
+import json
 import random
 import os
 import gradio as gr
+from tempfile import NamedTemporaryFile
 
-from litgpt.recurrentgpt import RecurrentGPT, State, gen_init_state
+import fire
+
+from litgpt.recurrentgpt import RecurrentGPT, State
 from litgpt.utils import encode_prompt, OPENAI_MODELS
 from litgpt.human_simulator import Human
 from litgpt.files import LOCAL_MODELS_LIST
@@ -19,21 +23,33 @@ DEFAULT_NOVEL_TYPE = "Science Fiction"
 DEFAULT_DESCRIPTION = "Рассказ на русском в сеттинге коммунизма в высокотехнологичном будущем"
 
 
-def init(state, novel_type, description, model_name, prompt_template):
-    if prompt_template == "openai" and model_name not in OPENAI_MODELS:
-        raise gr.Error("Please set correct prompt_template")
-
-    state = gen_init_state(
-        novel_type=novel_type,
-        description=description,
+def generate_plan(novel_type, description, model_name, prompt_template, embedder_name):
+    writer = RecurrentGPT(
+        embedder_name=embedder_name,
         model_name=model_name,
         prompt_template=prompt_template
     )
+    state = writer.generate_plan(novel_type=novel_type, description=description)
+    return (state, state.name, state.synopsis, state.plan)
+
+
+
+def generate_first_paragraphs(state, name, synopsis, plan, model_name, prompt_template, embedder_name):
+    if prompt_template == "openai" and model_name not in OPENAI_MODELS:
+        raise gr.Error("Please set correct prompt_template")
+
+    writer = RecurrentGPT(
+        embedder_name=embedder_name,
+        model_name=model_name,
+        prompt_template=prompt_template
+    )
+
+    state.name = name
+    state.synopsis = synopsis
+    state.plan = plan
+    state = writer.generate_first_paragraphs(state)
     return (
         state,
-        state.name,
-        state.global_summary,
-        state.global_plan,
         state.short_memory,
         "\n\n".join(state.paragraphs),
         state.next_instructions[0],
@@ -44,7 +60,7 @@ def init(state, novel_type, description, model_name, prompt_template):
 
 def step(
     state,
-    global_plan,
+    plan,
     short_memory,
     paragraphs,
     selected_instruction,
@@ -76,7 +92,7 @@ def step(
 
     return (
         state,
-        state.global_plan,
+        state.plan,
         state.short_memory,
         "\n\n".join(state.paragraphs),
         state.next_instructions[0],
@@ -84,6 +100,26 @@ def step(
         state.next_instructions[2],
         ""
     )
+
+
+def save(
+    file_name,
+    root_dir,
+    state,
+    name,
+    synopsis,
+    plan,
+    short_memory,
+    paragraphs,
+):
+    state.name = name
+    state.synopsis = synopsis
+    state.plan = plan
+    state.short_memory = short_memory
+    state.paragraphs = [p.strip() for p in paragraphs.split("\n\n") if p.strip()]
+    f = NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+    with open(os.path.join(root_dir, file_name), "w") as w:
+        json.dump(state.to_dict(), w, ensure_ascii=False, indent=4)
 
 
 def on_selected_plan_select(instruction1, instruction2, instruction3, evt: gr.SelectData):
@@ -95,18 +131,15 @@ def on_selected_plan_select(instruction1, instruction2, instruction3, evt: gr.Se
 def on_selection_mode_select(evt: gr.SelectData):
     value = evt.value
     is_manual = "manual" in value
-    return (
-        gr.Radio.update(interactive=is_manual),
-        gr.Textbox.update(interactive=is_manual)
-    )
+    return gr.Row.update(visible=is_manual)
 
 
-with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}", theme="default") as demo:
+with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
     state = gr.State(None)
     gr.Markdown("# Tale Studio")
-    with gr.Box():
-        with gr.Row():
-            with gr.Column(scale=1, min_width=200):
+    with gr.Row():
+        with gr.Column(scale=1, min_width=200):
+            with gr.Group():
                 model_name = gr.Dropdown(
                     MODEL_LIST,
                     value=DEFAULT_MODEL_NAME,
@@ -126,10 +159,11 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}", theme="def
                     label="Prompt template",
                 )
 
-            with gr.Column(scale=1, min_width=200):
+        with gr.Column(scale=1, min_width=200):
+            with gr.Group():
                 novel_type = gr.Textbox(
                     label="Novel type",
-                    value=DEFAULT_NOVEL_TYPE
+                    value=DEFAULT_NOVEL_TYPE,
                 )
                 gr.Examples([
                     "Science Fiction",
@@ -142,7 +176,8 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}", theme="def
                     "Western",
                     "Young Adult"
                 ], inputs=[novel_type])
-            with gr.Column(scale=3, min_width=400):
+        with gr.Column(scale=3, min_width=400):
+            with gr.Group():
                 description = gr.Textbox(label="Description", value=DEFAULT_DESCRIPTION)
                 gr.Examples([
                     "A novel about aliens",
@@ -162,38 +197,37 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}", theme="def
     with gr.Row():
         with gr.Column(scale=1):
             name = gr.Textbox(
-                label="Name",
-                max_lines=3,
-                lines=3
+                label="Name (editable)",
+                max_lines=1,
+                lines=1
             )
-        with gr.Column(scale=4):
-            global_summary = gr.Textbox(
-                label="Global summary",
-                max_lines=3,
-                lines=3
+            synopsis = gr.Textbox(
+                label="Synopsis (editable)",
+                max_lines=8,
+                lines=8
+            )
+        with gr.Column(scale=3):
+            plan = gr.Textbox(
+                label="Global plan (editable)",
+                lines=13,
+                max_lines=13
             )
 
-    with gr.Row():
-        with gr.Column():
+    with gr.Group():
+        with gr.Row():
             paragraphs = gr.Textbox(
                 label="Written Paragraphs (editable)",
-                max_lines=25,
-                lines=25
+                max_lines=20,
+                lines=20
             )
-        with gr.Column():
-            global_plan = gr.Textbox(
-                label="Global plan (editable)",
-                max_lines=15,
-                lines=16
-            )
+        with gr.Row():
             short_memory = gr.Textbox(
                 label="Short-Term Memory (editable)",
                 max_lines=5,
-                lines=6
+                lines=5
             )
 
-    with gr.Box():
-        gr.Markdown("### Instruction Module\n")
+    with gr.Group():
         with gr.Row():
             instruction1 = gr.Textbox(
                 label="Instruction 1", max_lines=7, lines=7, interactive=False
@@ -210,44 +244,43 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}", theme="def
                 label="Selection mode",
                 value="random"
             )
-        with gr.Row():
-            with gr.Column(scale=1, min_width=100):
-                selected_plan = gr.Radio(
-                    ["Instruction 1", "Instruction 2", "Instruction 3"],
-                    label="Instruction Selection",
-                    interactive=False
-                )
-            with gr.Column(scale=3, min_width=300):
-                selected_instruction = gr.Textbox(
-                    label="Selected Instruction (editable)",
-                    max_lines=5,
-                    lines=5,
-                    interactive=False
-                )
+
+    with gr.Group(visible=False) as instruction_selection:
+        selected_plan = gr.Radio(
+            ["Instruction 1", "Instruction 2", "Instruction 3"],
+            label="Instruction Selection",
+        )
+        selected_instruction = gr.Textbox(
+            label="Selected Instruction (editable)",
+            max_lines=5,
+            lines=5,
+        )
 
     with gr.Row():
         btn_step = gr.Button("Next Step", variant="primary")
+    with gr.Row():
+        btn_save = gr.Button("Save", variant="primary")
+
+    with gr.Group(visible=False) as file_saver:
+        save_filename = gr.Textbox(lines=1, label='File name')
+        save_root = gr.Textbox(lines=1, label='File folder', info='For reference. Unchangeable.', interactive=False, value="saves/")
+        btn_confirm_save = gr.Button("Confirm", variant="primary")
 
     btn_init.click(
-        init,
-        inputs=[state, novel_type, description, model_name, prompt_template],
-        outputs=[
-            state,
-            name,
-            global_summary,
-            global_plan,
-            short_memory,
-            paragraphs,
-            instruction1,
-            instruction2,
-            instruction3
-        ]
+        generate_plan,
+        inputs=[novel_type, description, model_name, prompt_template, embedder_name],
+        outputs=[state, name, synopsis, plan]
+    ).then(
+        generate_first_paragraphs,
+        inputs=[state, name, synopsis, plan, model_name, prompt_template, embedder_name],
+        outputs=[state, short_memory, paragraphs, instruction1, instruction2, instruction3]
     )
+
     btn_step.click(
         step,
         inputs=[
             state,
-            global_plan,
+            plan,
             short_memory,
             paragraphs,
             selected_instruction,
@@ -258,7 +291,7 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}", theme="def
         ],
         outputs=[
             state,
-            global_plan,
+            plan,
             short_memory,
             paragraphs,
             instruction1,
@@ -266,6 +299,26 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}", theme="def
             instruction3,
             selected_instruction
         ]
+    )
+    btn_save.click(
+        lambda: gr.update(visible=True),
+        outputs=[file_saver]
+    )
+    btn_confirm_save.click(
+        save,
+        inputs=[
+            save_filename,
+            save_root,
+            state,
+            name,
+            synopsis,
+            plan,
+            short_memory,
+            paragraphs,
+        ]
+    ).then(
+        lambda: gr.update(visible=False),
+        outputs=[file_saver]
     )
     selected_plan.select(
         on_selected_plan_select,
@@ -275,16 +328,23 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}", theme="def
     selection_mode.select(
         on_selection_mode_select,
         inputs=[],
-        outputs=[selected_plan, selected_instruction]
+        outputs=[instruction_selection]
     )
-    demo.queue(concurrency_count=1)
+    demo.queue()
 
 
-if __name__ == "__main__":
+def launch(
+    server_port: int = 8080,
+    server_name: str = "0.0.0.0",
+):
     demo.launch(
-        server_port=8006,
+        server_port=server_port,
         share=True,
-        server_name="0.0.0.0",
+        server_name=server_name,
         show_api=False,
         show_error=True
     )
+
+
+if __name__ == "__main__":
+    fire.Fire(launch)
