@@ -9,7 +9,7 @@ import fire
 from litgpt.recurrentgpt import RecurrentGPT, State
 from litgpt.utils import encode_prompt, OPENAI_MODELS
 from litgpt.human_simulator import Human
-from litgpt.files import LOCAL_MODELS_LIST
+from litgpt.files import LOCAL_MODELS_LIST, SAVES_DIR_PATH
 from litgpt.prompt_templates import PROMPT_TEMPLATE_LIST, DEFAULT_PROMPT_TEMPLATE_NAME
 
 MODEL_LIST = list(OPENAI_MODELS) + list(LOCAL_MODELS_LIST)
@@ -20,7 +20,7 @@ EMBEDDER_LIST = [
 ]
 DEFAULT_EMBEDDER_NAME = "embaas/sentence-transformers-multilingual-e5-base"
 DEFAULT_NOVEL_TYPE = "Science Fiction"
-DEFAULT_DESCRIPTION = "Рассказ на русском в сеттинге коммунизма в высокотехнологичном будущем"
+DEFAULT_DESCRIPTION = "Рассказ на русском языке в сеттинге коммунизма в высокотехнологичном будущем"
 
 
 def generate_plan(novel_type, description, model_name, prompt_template, embedder_name):
@@ -143,6 +143,18 @@ def load(file_name):
     )
 
 
+def load_from_saves(file_name):
+    full_path = os.path.join(SAVES_DIR_PATH, file_name)
+    return load(full_path)
+
+
+def get_saves_list():
+    files = os.listdir(SAVES_DIR_PATH)
+    files = [f for f in files if not f.startswith(".")]
+    first_file = files[0] if files else None
+    return gr.update(choices=files, value=files[0], interactive=True)
+
+
 def on_selected_plan_select(instruction1, instruction2, instruction3, evt: gr.SelectData):
     selected_plan = int(evt.value.replace("Instruction ", ""))
     selected_plan = [instruction1, instruction2, instruction3][selected_plan - 1]
@@ -206,8 +218,8 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
                     "Dystopian society with a twist",
                     "Contemporary coming-of-age story",
                     "Magical realism in a small American town",
-                    "Рассказ на русском в сеттинге коммунизма в высокотехнологичном будущем",
-                    "История на русском об Англии 19 века и колониализме"
+                    "Рассказ на русском языке в сеттинге коммунизма в высокотехнологичном будущем",
+                    "История на русском языке об Англии 19 века и колониализме"
                 ], inputs=[description])
     with gr.Row():
         btn_init = gr.Button(
@@ -279,9 +291,10 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
 
     with gr.Row():
         btn_step = gr.Button("Next Step", variant="primary")
-    with gr.Row():
+    with gr.Row() as save_load_buttons:
         btn_save = gr.Button("Save", variant="primary")
-        btn_load = gr.UploadButton("Load", variant="primary")
+        btn_load = gr.Button("Load", variant="primary")
+        btn_upload = gr.UploadButton("Upload", variant="primary")
 
     with gr.Group(visible=False) as file_saver:
         save_filename = gr.Textbox(lines=1, label="File name")
@@ -290,11 +303,17 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
             label="File folder",
             info="For reference. Unchangeable.",
             interactive=False,
-            value="saves/"
+            value=SAVES_DIR_PATH
         )
         with gr.Row():
             btn_confirm_save = gr.Button("Confirm", variant="primary")
-            btn_close_save = gr.Button("Close", variant="warning")
+            btn_close_save = gr.Button("Close", variant="secondary")
+
+    with gr.Group(visible=False) as file_loader:
+        load_filename = gr.Dropdown(label="File name", choices=[], value=None)
+        with gr.Row():
+            btn_confirm_load = gr.Button("Confirm", variant="primary")
+            btn_close_load = gr.Button("Close", variant="secondary")
 
     btn_init.click(
         generate_plan,
@@ -332,7 +351,7 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
     )
     btn_save.click(
         lambda: (gr.update(visible=True), gr.update(visible=False)),
-        outputs=[file_saver, btn_save]
+        outputs=[file_saver, save_load_buttons]
     )
     btn_confirm_save.click(
         save,
@@ -348,15 +367,45 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
         ]
     ).success(
         lambda: (gr.update(visible=False), gr.update(visible=True)),
-        outputs=[file_saver, btn_save]
+        outputs=[file_saver, save_load_buttons]
     )
     btn_close_save.click(
         lambda: (gr.update(visible=False), gr.update(visible=True)),
-        outputs=[file_saver, btn_save]
+        outputs=[file_saver, save_load_buttons]
     )
-    btn_load.upload(
+    btn_load.click(
+        get_saves_list,
+        outputs=[load_filename]
+    ).then(
+        lambda: (gr.update(visible=True), gr.update(visible=False)),
+        outputs=[file_loader, save_load_buttons]
+    )
+    btn_close_load.click(
+        lambda: (gr.update(visible=False), gr.update(visible=True)),
+        outputs=[file_loader, save_load_buttons]
+    )
+    btn_confirm_load.click(
+        load_from_saves,
+        inputs=[load_filename],
+        outputs=[
+            state,
+            name,
+            synopsis,
+            plan,
+            short_memory,
+            paragraphs,
+            instruction1,
+            instruction2,
+            instruction3,
+        ]
+    ).success(
+        lambda: (gr.update(visible=False), gr.update(visible=True)),
+        outputs=[file_loader, save_load_buttons]
+    )
+
+    btn_upload.upload(
         load,
-        inputs=[btn_load],
+        inputs=[btn_upload],
         outputs=[
             state,
             name,
