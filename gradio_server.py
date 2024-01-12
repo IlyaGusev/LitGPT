@@ -2,23 +2,18 @@ import json
 import random
 import os
 import gradio as gr
-from tempfile import NamedTemporaryFile
 
 import fire
 
-from litgpt.recurrentgpt import RecurrentGPT, State
-from litgpt.utils import encode_prompt, OPENAI_MODELS
-from litgpt.human_simulator import Human
-from litgpt.files import LOCAL_MODELS_LIST, SAVES_DIR_PATH
-from litgpt.prompt_templates import PROMPT_TEMPLATE_LIST, DEFAULT_PROMPT_TEMPLATE_NAME
+from tale_studio.recurrentgpt import RecurrentGPT, State
+from tale_studio.embedders import EMBEDDER_LIST, DEFAULT_EMBEDDER_NAME
+from tale_studio.utils import OPENAI_MODELS
+from tale_studio.human_simulator import Human
+from tale_studio.files import LOCAL_MODELS_LIST, SAVES_DIR_PATH
+from tale_studio.prompt_templates import PROMPT_TEMPLATE_LIST, DEFAULT_PROMPT_TEMPLATE_NAME
 
 MODEL_LIST = list(OPENAI_MODELS) + list(LOCAL_MODELS_LIST)
 DEFAULT_MODEL_NAME = "gpt-3.5-turbo-16k"
-EMBEDDER_LIST = [
-    "embaas/sentence-transformers-multilingual-e5-base",
-    "sentence-transformers/multi-qa-mpnet-base-cos-v1"
-]
-DEFAULT_EMBEDDER_NAME = "embaas/sentence-transformers-multilingual-e5-base"
 DEFAULT_NOVEL_TYPE = "Science Fiction"
 DEFAULT_DESCRIPTION = "Рассказ на русском языке в сеттинге коммунизма в высокотехнологичном будущем"
 
@@ -31,7 +26,6 @@ def generate_plan(novel_type, description, model_name, prompt_template, embedder
     )
     state = writer.generate_plan(novel_type=novel_type, description=description)
     return (state, state.name, state.synopsis, state.plan)
-
 
 
 def generate_first_paragraphs(state, name, synopsis, plan, model_name, prompt_template, embedder_name):
@@ -81,7 +75,7 @@ def step(
     state.paragraphs = [p.strip() for p in paragraphs.split("\n\n") if p.strip()]
 
     if selection_mode == "gpt":
-        human = Human(model_name=model_name)
+        human = Human(model_name=model_name, prompt_template=prompt_template)
         state = human.step(state)
     elif selection_mode == "random":
         state.instruction = random.choice(state.next_instructions)
@@ -92,7 +86,6 @@ def step(
 
     return (
         state,
-        state.plan,
         state.short_memory,
         "\n\n".join(state.paragraphs),
         state.next_instructions[0],
@@ -122,7 +115,6 @@ def save(
     state.plan = plan
     state.short_memory = short_memory
     state.paragraphs = [p.strip() for p in paragraphs.split("\n\n") if p.strip()]
-    f = NamedTemporaryFile(mode="w", suffix=".json", delete=False)
     with open(os.path.join(root_dir, file_name), "w") as w:
         json.dump(state.to_dict(), w, ensure_ascii=False, indent=4)
 
@@ -152,7 +144,7 @@ def get_saves_list():
     files = os.listdir(SAVES_DIR_PATH)
     files = [f for f in files if not f.startswith(".")]
     first_file = files[0] if files else None
-    return gr.update(choices=files, value=files[0], interactive=True)
+    return gr.update(choices=files, value=first_file, interactive=True)
 
 
 def on_selected_plan_select(instruction1, instruction2, instruction3, evt: gr.SelectData):
@@ -223,7 +215,7 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
                 ], inputs=[description])
     with gr.Row():
         btn_init = gr.Button(
-            "Init Novel Generation",
+            "Start New Novel",
             variant="primary"
         )
 
@@ -340,7 +332,6 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
         ],
         outputs=[
             state,
-            plan,
             short_memory,
             paragraphs,
             instruction1,

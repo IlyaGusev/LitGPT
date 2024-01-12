@@ -2,8 +2,8 @@ from typing import List, Dict
 
 from llama_cpp import Llama
 
-from litgpt.prompt_templates import PROMPT_TEMPLATES
-from litgpt.files import MODELS_DIR_PATH
+from tale_studio.prompt_templates import PROMPT_TEMPLATES
+from tale_studio.files import MODELS_DIR_PATH
 
 
 class GGUFModels:

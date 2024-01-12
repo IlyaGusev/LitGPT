@@ -1,11 +1,11 @@
 import json
 
 import fire
-from sentence_transformers import SentenceTransformer
 
-from litgpt.utils import DEFAULT_MODEL, encode_prompt
-from litgpt.recurrentgpt import RecurrentGPT, State, gen_init_state
-from litgpt.human_simulator import Human
+from tale_studio.embedders import DEFAULT_EMBEDDER_NAME
+from tale_studio.openai_wrapper import DEFAULT_MODEL
+from tale_studio.recurrentgpt import RecurrentGPT
+from tale_studio.human_simulator import Human
 
 
 def main(
@@ -13,16 +13,21 @@ def main(
     out_file: str = "out.jsonl",
     novel_type: str = "science fiction",
     description: str = "",
-    model_name: str = DEFAULT_MODEL
+    model_name: str = DEFAULT_MODEL,
+    embedder_name: str = DEFAULT_EMBEDDER_NAME,
+    prompt_template: str = "openai"
 ):
-    state = gen_init_state(
-        novel_type=novel_type,
-        description=description,
-        model_name=model_name
+    writer = RecurrentGPT(
+        embedder_name=embedder_name,
+        model_name=model_name,
+        prompt_template=prompt_template
     )
-    embedder = SentenceTransformer("multi-qa-mpnet-base-cos-v1")
-    writer = RecurrentGPT(embedder=embedder, model_name=model_name)
-    human = Human(model_name=model_name)
+    human = Human(
+        model_name=model_name,
+        prompt_template=prompt_template
+    )
+    state = writer.generate_plan(novel_type=novel_type, description=description)
+    state = writer.generate_first_paragraphs(state)
 
     with open(out_file, "w") as w:
         w.write(json.dumps(state.to_dict(), ensure_ascii=False) + "\n")

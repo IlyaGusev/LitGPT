@@ -1,9 +1,8 @@
 from typing import List, Dict
 
 import requests
-from llama_cpp import Llama
 
-from litgpt.prompt_templates import PROMPT_TEMPLATES
+from tale_studio.prompt_templates import PROMPT_TEMPLATES
 
 DEFAULT_URL = "http://127.0.0.1:8000/generate"
 
@@ -37,11 +36,3 @@ def tgi_completion(
     data = response.json()
     out_text = data["generated_text"].strip()
     return out_text
-
-
-def alpaca_tgi_completion(messages, url: str = DEFAULT_URL):
-    return alpaca_completion(
-        func=tgi_completion,
-        messages=messages,
-        url=url
-    )

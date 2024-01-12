@@ -1,12 +1,11 @@
-import random
 import json
 from typing import List, Optional
 from dataclasses import dataclass, asdict, field
 
 import torch
-from sentence_transformers import SentenceTransformer
 
-from litgpt.utils import novel_json_completion, encode_prompt, cos_sim
+from tale_studio.embedders import EmbeddersStorage
+from tale_studio.utils import novel_json_completion, encode_prompt, cos_sim
 
 
 @dataclass
@@ -40,16 +39,6 @@ class State:
     @classmethod
     def from_dict(cls, d):
         return cls(**d)
-
-
-class EmbeddersStorage:
-    embedders = dict()
-
-    @classmethod
-    def get_embedder(cls, embedder_name: str):
-        if embedder_name not in cls.embedders:
-            cls.embedders[embedder_name] = SentenceTransformer(embedder_name)
-        return cls.embedders[embedder_name]
 
 
 class RecurrentGPT:

@@ -2,9 +2,12 @@ import json
 import traceback
 
 import torch
-from litgpt.openai_wrapper import openai_completion, encode_prompt, DEFAULT_MODEL, OPENAI_MODELS
-from litgpt.gguf_wrapper import gguf_completion
-from litgpt.tgi_wrapper import tgi_completion
+from jinja2 import Template
+
+from tale_studio.files import PROMPTS_DIR_PATH
+from tale_studio.openai_wrapper import openai_completion, OPENAI_MODELS
+from tale_studio.gguf_wrapper import gguf_completion
+from tale_studio.tgi_wrapper import tgi_completion
 
 
 DEFAULT_SYSTEM_PROMPT = "You are a helpful and creative assistant for writing novel."
@@ -88,3 +91,10 @@ def cos_sim(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     a_norm = torch.nn.functional.normalize(a, p=2, dim=1)
     b_norm = torch.nn.functional.normalize(b, p=2, dim=1)
     return torch.mm(a_norm, b_norm.transpose(0, 1))
+
+
+def encode_prompt(template_name, **kwargs):
+    template_path = PROMPTS_DIR_PATH / template_name
+    with open(template_path) as f:
+        template = Template(f.read())
+    return template.render(**kwargs).strip() + "\n"

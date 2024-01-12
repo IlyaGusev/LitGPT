@@ -1,15 +1,11 @@
 import copy
 import logging
 import time
-import pathlib
 from dataclasses import dataclass
 from typing import Optional, Sequence
 from multiprocessing.pool import ThreadPool
 
 import openai
-from jinja2 import Template
-
-from litgpt.files import PROMPTS_DIR_PATH
 
 
 OPENAI_MODELS = ("gpt-3.5-turbo-16k", "gpt-4-1106-preview")
@@ -73,10 +69,3 @@ def openai_batch_completion(
         for result in results:
             completions.append(result)
     return completions
-
-
-def encode_prompt(template_name, **kwargs):
-    template_path = PROMPTS_DIR_PATH / template_name
-    with open(template_path) as f:
-        template = Template(f.read())
-    return template.render(**kwargs).strip() + "\n"
