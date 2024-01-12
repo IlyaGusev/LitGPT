@@ -428,10 +428,11 @@ def launch(
 ):
     demo.launch(
         server_port=server_port,
-        share=True,
+        share=False,
         server_name=server_name,
         show_api=False,
-        show_error=True
+        show_error=True,
+        favicon_path="static/favicon.ico"
     )
 
 
