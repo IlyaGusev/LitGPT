@@ -425,10 +425,11 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
 def launch(
     server_port: int = 8080,
     server_name: str = "0.0.0.0",
+    share: bool = False
 ):
     demo.launch(
         server_port=server_port,
-        share=False,
+        share=share,
         server_name=server_name,
         show_api=False,
         show_error=True,
