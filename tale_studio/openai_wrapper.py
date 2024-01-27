@@ -38,7 +38,7 @@ def openai_completion(
     assert decoding_args.n == 1
     while True:
         try:
-            client = OpenAI(api_key=api_key)
+            client = OpenAI(api_key=api_key) if api_key else OpenAI()
             completions = client.chat.completions.create(
                 messages=messages,
                 model=model_name,

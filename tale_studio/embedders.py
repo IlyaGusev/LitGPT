@@ -15,4 +15,3 @@ EMBEDDER_LIST = [
     "embaas/sentence-transformers-multilingual-e5-base",
     "sentence-transformers/multi-qa-mpnet-base-cos-v1"
 ]
-DEFAULT_EMBEDDER_NAME = "embaas/sentence-transformers-multilingual-e5-base"

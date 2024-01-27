@@ -1,7 +1,7 @@
 Please write a detailed outline for a {% if not novel_type %}Science Fiction{% else %}{{novel_type}}{% endif %} novel with this description:
 {% if description %}{{description}}{% else %}A novel about anything{% endif %}
 
-Begin with a catchy name of the novel.
+Begin with a catchy name of the novel and determine its main language.
 Then, generate a summary of the whole novel containing its main idea.
 Then, plan all 6 or 7 chapters of the novel.
 The story should have an ending.
@@ -11,6 +11,7 @@ Write in a novelistic style.
 The output should be in JSON with the following fields:
 {
     "name": <name of the novel>,
+    "language": <language of the novel>,
     "synopsis": <synopsis of the whole novel>,
     "chapter_summaries": [
         "Chapter 1. <summary of chapter 1>",

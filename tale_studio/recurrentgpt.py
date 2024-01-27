@@ -10,10 +10,11 @@ from tale_studio.utils import novel_json_completion, encode_prompt, cos_sim, nov
 
 @dataclass
 class State:
-    name: str
-    synopsis: str
+    name: str = ""
+    synopsis: str = ""
     plan: str = ""
     novel_type: str = ""
+    language: str = "English"
     description: str = ""
     paragraphs: List[str] = field(default_factory=lambda: list())
     short_memory: str = ""
@@ -42,12 +43,9 @@ class State:
 
 
 class RecurrentGPT:
-    def __init__(self, model_name: str, embedder_name: str, prompt_template: str, api_key: str = None):
-        self.model_name = model_name
-        self.api_key = api_key
-        self.embedder_name = embedder_name
-        self.prompt_template = prompt_template
-        self.embedder = EmbeddersStorage.get_embedder(embedder_name)
+    def __init__(self, model_settings):
+        self.model_settings = model_settings
+        self.embedder = EmbeddersStorage.get_embedder(model_settings.embedder_name)
         self.query_prefix = "query: "
         self.passage_prefix = "passage: "
 
@@ -71,6 +69,7 @@ class RecurrentGPT:
         prompt = encode_prompt(
             "output.jinja",
             plan=state.plan,
+            language=state.language,
             short_memory=state.short_memory,
             input_paragraph=state.paragraphs[-1],
             input_instruction=state.instruction,
@@ -90,6 +89,7 @@ class RecurrentGPT:
         prompt = encode_prompt(
             "step.jinja",
             plan=state.plan,
+            language=state.language,
             short_memory=state.short_memory,
             input_paragraph=state.paragraphs[-2],
             output_paragraph=state.paragraphs[-1],
@@ -136,17 +136,20 @@ class RecurrentGPT:
             synopsis=plan_info["synopsis"],
             plan="\n".join(plan_info["chapter_summaries"]),
             novel_type=novel_type,
-            description=description
+            description=description,
+            language=plan_info["language"]
         )
 
     def generate_first_paragraphs(
         self,
         state: State
     ):
+        plan_start = state.plan.split("\n")[0]
         begin_prompt = encode_prompt(
             "begin.jinja",
+            language=state.language,
             novel_type=state.novel_type,
-            plan=state.plan,
+            plan=plan_start,
             name=state.name,
             synopsis=state.synopsis,
         )
@@ -164,6 +167,7 @@ class RecurrentGPT:
             "process.jinja",
             novel_type=state.novel_type,
             plan=state.plan,
+            language=state.language,
             name=state.name,
             synopsis=state.synopsis,
             paragraphs="\n\n".join(state.paragraphs)
@@ -187,15 +191,15 @@ class RecurrentGPT:
     def _complete_json(self, prompt):
         return novel_json_completion(
             prompt,
-            model_name=self.model_name,
-            prompt_template=self.prompt_template,
-            api_key=self.api_key
+            model_name=self.model_settings.model_name,
+            prompt_template=self.model_settings.prompt_template,
+            api_key=self.model_settings.api_key
         )
 
     def _complete_text(self, prompt):
         return novel_completion(
             prompt,
-            model_name=self.model_name,
-            prompt_template=self.prompt_template,
-            api_key=self.api_key
+            model_name=self.model_settings.model_name,
+            prompt_template=self.model_settings.prompt_template,
+            api_key=self.model_settings.api_key
         )
