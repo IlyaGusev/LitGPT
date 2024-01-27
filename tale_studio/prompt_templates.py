@@ -1,11 +1,37 @@
 ALPACA_TEMPLATE = """### System:
-    {system_message}
+{system_message}
 ### User:
-    {user_message}
-### Assistant:"""
+{user_message}
+### Assistant:
+"""
 
 
-def format_alpaca(messages):
+CHATML_TEMPLATE = """<|im_start|>system
+{system_message}<|im_end|>
+<|im_start|>user
+{user_message}<|im_end|>
+<|im_start|>assistant
+"""
+
+
+SAIGA_TEMPLATE = """<s>system
+{system_message}
+<s>user
+{user_message}</s>
+<s>bot
+"""
+
+
+PROMPT_TEMPLATES = {
+    "alpaca": ALPACA_TEMPLATE,
+    "saiga": SAIGA_TEMPLATE,
+    "chatml": CHATML_TEMPLATE,
+    "openai": "openai",
+    "custom": "Edit here"
+}
+
+
+def format_template(messages, template):
     system_message = ""
     user_message = ""
     for message in messages:
@@ -14,36 +40,11 @@ def format_alpaca(messages):
         elif message["role"] == "user":
             user_message = message["content"]
     assert user_message
-    return ALPACA_TEMPLATE.format(
+    return template.format(
         system_message=system_message,
         user_message=user_message
     )
 
 
-SAIGA_TEMPLATE = """<s>system
-Ты — Сайга, русскоязычный автоматический ассистент. Ты разговариваешь с людьми и помогаешь им.</s>
-<s>user
-{user_message}</s>
-<s>bot
-"""
-
-
-def format_saiga(messages):
-    user_message = ""
-    for message in messages:
-        if message["role"] == "user":
-            user_message = message["content"]
-    assert user_message
-    return SAIGA_TEMPLATE.format(
-        user_message=user_message
-    )
-
-
-PROMPT_TEMPLATES = {
-    "alpaca": format_alpaca,
-    "saiga": format_saiga
-}
-
-PROMPT_TEMPLATE_LIST = ["openai"] + list(PROMPT_TEMPLATES.keys())
-
+PROMPT_TEMPLATE_LIST = list(PROMPT_TEMPLATES.keys())
 DEFAULT_PROMPT_TEMPLATE_NAME = "openai"

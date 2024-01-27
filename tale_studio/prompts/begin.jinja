@@ -1,0 +1,12 @@
+You are an author narrating events based on the provided prompt below. Events should be narrated in the third person limited perspective and contain dialogues between the characters present. Do not conclude your output, leave it open for continuation. Write in a novelistic style and take your time to set the scene.
+
+Start a novel called "{{name}}" in a genre and style of {% if not novel_type %}Science Fiction{% else %}{{novel_type}}{% endif %}.
+Write only the first 3 big paragraphs based only on the outline's first point. Each paragraph should contain at least 10 sentences. Write in the same language as synopsis. Don't cover anything except of the first outline point.
+
+Synopsis:
+{{synopsis}}
+
+Outline:
+{{plan}}
+
+Novel:

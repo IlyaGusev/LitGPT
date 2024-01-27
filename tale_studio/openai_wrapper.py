@@ -5,8 +5,7 @@ from dataclasses import dataclass
 from typing import Optional, Sequence
 from multiprocessing.pool import ThreadPool
 
-import openai
-
+from openai import OpenAI, APIError
 
 OPENAI_MODELS = ("gpt-3.5-turbo-16k", "gpt-4-1106-preview")
 
@@ -32,19 +31,21 @@ def openai_completion(
     messages,
     decoding_args: OpenAIDecodingArguments = DEFAULT_ARGS,
     model_name: str = DEFAULT_MODEL,
-    sleep_time: int = DEFAULT_SLEEP_TIME
+    sleep_time: int = DEFAULT_SLEEP_TIME,
+    api_key: Optional[str] = None
 ):
     decoding_args = copy.deepcopy(decoding_args)
     assert decoding_args.n == 1
     while True:
         try:
-            completions = openai.ChatCompletion.create(
+            client = OpenAI(api_key=api_key)
+            completions = client.chat.completions.create(
                 messages=messages,
                 model=model_name,
                 **decoding_args.__dict__
             )
             break
-        except openai.error.OpenAIError as e:
+        except APIError as e:
             logging.warning(f"OpenAIError: {e}.")
             if "Please reduce" in str(e):
                 decoding_args.max_tokens = int(decoding_args.max_tokens * 0.8)
@@ -52,19 +53,20 @@ def openai_completion(
             else:
                 logging.warning("Hit request rate limit; retrying...")
                 time.sleep(sleep_time)
-    return completions.choices[0].message["content"]
+    return completions.choices[0].message.content
 
 
 def openai_batch_completion(
     batch,
     decoding_args: OpenAIDecodingArguments = DEFAULT_ARGS,
     model_name: str = DEFAULT_MODEL,
-    sleep_time: int = DEFAULT_SLEEP_TIME
+    sleep_time: int = DEFAULT_SLEEP_TIME,
+    api_key: Optional[str] = None
 ):
     completions = []
     with ThreadPool(len(batch)) as pool:
         results = pool.starmap(openai_completion, [
-            (messages, decoding_args, model_name, sleep_time) for messages in batch
+            (messages, decoding_args, model_name, sleep_time, api_key) for messages in batch
         ])
         for result in results:
             completions.append(result)

@@ -1,12 +1,11 @@
 Please help me write a novel.
 
 I need you to write:
-1. Output Paragraph: the next paragraph of the novel. The output paragraph should contain 6 to 10 sentences and follow the input instructions.
-2. Output Memory: the updated memory. First, explain which sentences in the input memory are no longer necessary and why, then explain what needs to be added to the memory and why. Then, write the updated memory. The updated memory should be similar to the input memory except for the parts you previously thought should be deleted or added. The updated memory should only store essential information. The updated memory should be at most 10 sentences or 300 words!
-3. Output Instructions: instructions on what to write next. Output 3 different instructions; each is a possible exciting story continuation. Each output instruction should contain around 5 sentences and fit the global plan. You should follow the pace of 5 paragraphs per chapter; you are provided with a total number of existing paragraphs and the chapter plan.
+1. Output Memory: the updated memory. First, explain which sentences in the input memory are no longer necessary and why, then explain what needs to be added to the memory and why. Then, write the updated memory. The updated memory should be similar to the input memory except for the parts you previously thought should be deleted or added. The updated memory should only store essential information. The updated memory should be at most 10 sentences or 300 words!
+2. Output Instructions: instructions on what to write next. Output 3 different instructions; each is a possible exciting story continuation. Each output instruction should contain around 5 sentences and fit the global plan. You should follow the pace of 5 paragraphs per chapter; you are provided with a total number of existing paragraphs and the chapter plan.
 
-Here is the global plan:
-{{global_plan}}
+Here is the outline:
+{{plan}}
 
 And the total number of existing paragraphs: {{num_paragraphs}}
 Use it to frame the output instructions.
@@ -15,17 +14,17 @@ Short input memory: {{short_memory}}
 
 {{input_long_term_memory}}
 
-The last paragraph: {{input_paragraph}}
+Last paragraph:
+{{input_paragraph}}
 
-Input instruction: {{input_instruction}}
+New paragraph:
+{{output_paragraph}}
 
 Write and organize your output by strictly following the format below using JSON.
 Write all the outputs in the same language as the last paragraph. Output instructions should also be entirely in the language of the last paragraph.
-Finally, remember that you are writing a novel. Write like a novelist.
 
 Format:
 {
-    "output_paragraph": <output paragraph, from 6 to 10 sentences that follows the Input instruction>,
     "updated_memory_rational": <string that explains how to update the memory>,
     "updated_memory": <string of updated memory, around 5 to 10 sentences>,
     "instruction_1": <content for instruction 1, around 5 sentences>,

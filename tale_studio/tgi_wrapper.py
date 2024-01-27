@@ -2,7 +2,8 @@ from typing import List, Dict
 
 import requests
 
-from tale_studio.prompt_templates import PROMPT_TEMPLATES
+from tale_studio.prompt_templates import format_template
+
 
 DEFAULT_URL = "http://127.0.0.1:8000/generate"
 
@@ -17,7 +18,7 @@ def tgi_completion(
     temperature: float = 1.0,
     repetition_penalty: float = 1.1
 ):
-    prompt = PROMPT_TEMPLATES[prompt_template](messages)
+    prompt = format_template(messages, prompt_template)
     data = {
         "inputs": prompt,
         "parameters": {

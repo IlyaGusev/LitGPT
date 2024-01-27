@@ -1,0 +1,23 @@
+Write a summary that captures the critical information of the paragraphs.
+
+Then write 3 different instructions for what to write next, each containing around 5 sentences.
+Each instruction should present a possible, exciting story continuation that fits the global plan presented below.
+Output all the fields in the same language as the paragraphs.
+
+Synopsis:
+{{synopsis}}
+
+Outline:
+{{plan}}
+
+Paragraphs:
+{{paragraphs}}
+
+The output should be in JSON with the following fields:
+{
+    "summary": <content of summary>,
+    "instruction_1": <content for instruction 1>,
+    "instruction_2": content for instruction 2>,
+    "instruction_3": <content for instruction 3>
+}
+All values should be in the same language as paragraphs.

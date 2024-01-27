@@ -1,5 +1,6 @@
 import json
 import traceback
+from typing import Optional
 
 import torch
 from jinja2 import Template
@@ -10,13 +11,14 @@ from tale_studio.gguf_wrapper import gguf_completion
 from tale_studio.tgi_wrapper import tgi_completion
 
 
-DEFAULT_SYSTEM_PROMPT = "You are a helpful and creative assistant for writing novel."
+DEFAULT_SYSTEM_PROMPT = "You are a helpful and creative assistant for writing novels."
 
 
 def novel_completion(
     prompt: str,
     prompt_template: str,
     model_name: str,
+    api_key: Optional[str] = None,
     system_prompt: str = DEFAULT_SYSTEM_PROMPT
 ):
     messages = [
@@ -30,14 +32,25 @@ def novel_completion(
         }
     ]
     if model_name == "tgi":
-        return tgi_completion(messages, prompt_template=prompt_template)
-    if model_name in OPENAI_MODELS:
-        return openai_completion(messages, model_name=model_name)
-    return gguf_completion(
-        messages,
-        model_name=model_name,
-        prompt_template=prompt_template
-    )
+        output = tgi_completion(
+            messages,
+            prompt_template=prompt_template
+        )
+    elif model_name in OPENAI_MODELS:
+        output = openai_completion(
+            messages,
+            model_name=model_name,
+            api_key=api_key
+        )
+    else:
+        output = gguf_completion(
+            messages,
+            model_name=model_name,
+            prompt_template=prompt_template
+        )
+    output = output.replace("<|im_end|>", "")
+    output = output.replace("</s>", "")
+    return output
 
 
 def parse_json_output(output):
@@ -53,6 +66,7 @@ def novel_json_completion(
     prompt: str,
     model_name: str,
     prompt_template: str,
+    api_key: Optional[str] = None,
     system_prompt: str = DEFAULT_SYSTEM_PROMPT
 ):
     response = None
@@ -62,7 +76,8 @@ def novel_json_completion(
                 prompt=prompt,
                 model_name=model_name,
                 prompt_template=prompt_template,
-                system_prompt=system_prompt
+                system_prompt=system_prompt,
+                api_key=api_key
             )
             output = parse_json_output(response)
             break

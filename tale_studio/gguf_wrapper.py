@@ -2,7 +2,7 @@ from typing import List, Dict
 
 from llama_cpp import Llama
 
-from tale_studio.prompt_templates import PROMPT_TEMPLATES
+from tale_studio.prompt_templates import format_template
 from tale_studio.files import MODELS_DIR_PATH
 
 
@@ -31,7 +31,7 @@ def gguf_completion(
     n_ctx: int = 16384,
     n_gpu_layers: int = -1
 ):
-    prompt = PROMPT_TEMPLATES[prompt_template](messages)
+    prompt = format_template(messages, prompt_template)
     model = GGUFModels.get_model(
         model_name,
         n_ctx=n_ctx,
