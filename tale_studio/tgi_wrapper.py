@@ -14,14 +14,14 @@ def tgi_completion(
     model_settings: ModelSettings,
     url: str = DEFAULT_URL,
 ):
-    prompt = format_template(messages, prompt_template)
+    prompt = format_template(messages, model_settings.prompt_template)
     params = vars(model_settings.generation_params)
     data = {
         "inputs": prompt,
         "parameters": {
             "do_sample": True,
             "seed": 42,
-            "watermark": False
+            "watermark": False,
             **params
         },
     }

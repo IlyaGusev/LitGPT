@@ -1,6 +1,5 @@
 import json
 import traceback
-from typing import Optional
 
 import torch
 from jinja2 import Template

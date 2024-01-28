@@ -4,6 +4,7 @@ from tale_studio.recurrentgpt import State
 from tale_studio.utils import novel_json_completion, encode_prompt
 from tale_studio.model_settings import ModelSettings
 
+
 class Human:
     def __init__(self, model_settings: ModelSettings):
         self.model_settings = model_settings
