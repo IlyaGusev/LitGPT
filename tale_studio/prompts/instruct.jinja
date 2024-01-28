@@ -1,0 +1,26 @@
+You should output 3 different instructions, each is a possible interesting continuation of the story.
+Each output instruction should contain around 5 sentences and fit the global plan.
+Think about what plot can be attractive for common readers when writing output instructions.
+
+Write and organize your output by strictly following the format below using JSON.
+Format:
+{
+    "instruction_1": <content for instruction 1, around 5 sentences>,
+    "instruction_2": <content for instruction 2, around 5 sentences>,
+    "instruction_3": <content for instruction 3, around 5 sentences>
+}
+
+Use strictly this language: {{language}}
+
+Here is the outline:
+####
+{{plan}}
+####
+
+Previous short summary:
+{{short_memory}}
+
+{{input_long_term_memory}}
+
+Last paragraph:
+{{output_paragraph}}

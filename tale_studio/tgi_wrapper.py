@@ -2,6 +2,7 @@ from typing import List, Dict
 
 import requests
 
+from tale_studio.model_settings import ModelSettings
 from tale_studio.prompt_templates import format_template
 
 
@@ -10,26 +11,18 @@ DEFAULT_URL = "http://127.0.0.1:8000/generate"
 
 def tgi_completion(
     messages: List[Dict[str, str]],
-    prompt_template: str,
+    model_settings: ModelSettings,
     url: str = DEFAULT_URL,
-    max_new_tokens: int = 4096,
-    top_k: int = 30,
-    top_p: float = 0.9,
-    temperature: float = 1.0,
-    repetition_penalty: float = 1.1
 ):
     prompt = format_template(messages, prompt_template)
+    params = vars(model_settings.generation_params)
     data = {
         "inputs": prompt,
         "parameters": {
-            "max_new_tokens": max_new_tokens,
-            "repetition_penalty": repetition_penalty,
             "do_sample": True,
-            "temperature": temperature,
             "seed": 42,
-            "top_p": top_p,
-            "top_k": top_k,
             "watermark": False
+            **params
         },
     }
     headers = {"Content-Type": "application/json"}

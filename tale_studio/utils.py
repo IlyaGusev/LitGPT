@@ -5,8 +5,9 @@ from typing import Optional
 import torch
 from jinja2 import Template
 
+from tale_studio.model_settings import ModelSettings
 from tale_studio.files import PROMPTS_DIR_PATH
-from tale_studio.openai_wrapper import openai_completion, OPENAI_MODELS
+from tale_studio.openai_wrapper import openai_completion, OPENAI_MODELS, OpenAIDecodingArguments
 from tale_studio.gguf_wrapper import gguf_completion
 from tale_studio.tgi_wrapper import tgi_completion
 
@@ -16,9 +17,7 @@ DEFAULT_SYSTEM_PROMPT = "You are a helpful and creative assistant for writing no
 
 def novel_completion(
     prompt: str,
-    prompt_template: str,
-    model_name: str,
-    api_key: Optional[str] = None,
+    model_settings: ModelSettings,
     system_prompt: str = DEFAULT_SYSTEM_PROMPT
 ):
     messages = [
@@ -31,23 +30,20 @@ def novel_completion(
             "content": prompt,
         }
     ]
-    if model_name == "tgi":
-        output = tgi_completion(
-            messages,
-            prompt_template=prompt_template
-        )
-    elif model_name in OPENAI_MODELS:
+    if model_settings.model_name == "tgi":
+        output = tgi_completion(messages, model_settings)
+    elif model_settings.model_name in OPENAI_MODELS:
         output = openai_completion(
             messages,
-            model_name=model_name,
-            api_key=api_key
+            decoding_args=OpenAIDecodingArguments(
+                temperature=model_settings.generation_params.temperature,
+                top_p=model_settings.generation_params.top_p,
+            ),
+            model_name=model_settings.model_name,
+            api_key=model_settings.api_key
         )
     else:
-        output = gguf_completion(
-            messages,
-            model_name=model_name,
-            prompt_template=prompt_template
-        )
+        output = gguf_completion(messages, model_settings)
     output = output.replace("<|im_end|>", "")
     output = output.replace("</s>", "")
     return output
@@ -64,9 +60,7 @@ def parse_json_output(output):
 
 def novel_json_completion(
     prompt: str,
-    model_name: str,
-    prompt_template: str,
-    api_key: Optional[str] = None,
+    model_settings: ModelSettings,
     system_prompt: str = DEFAULT_SYSTEM_PROMPT
 ):
     response = None
@@ -74,10 +68,8 @@ def novel_json_completion(
         try:
             response = novel_completion(
                 prompt=prompt,
-                model_name=model_name,
-                prompt_template=prompt_template,
+                model_settings=model_settings,
                 system_prompt=system_prompt,
-                api_key=api_key
             )
             output = parse_json_output(response)
             break

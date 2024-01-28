@@ -1,7 +1,9 @@
+import copy
 from typing import List, Dict
 
 from llama_cpp import Llama
 
+from tale_studio.model_settings import ModelSettings
 from tale_studio.prompt_templates import format_template
 from tale_studio.files import MODELS_DIR_PATH
 
@@ -22,29 +24,24 @@ class GGUFModels:
 
 def gguf_completion(
     messages: List[Dict[str, str]],
-    model_name: str,
-    prompt_template: str,
-    top_k: int = 30,
-    top_p: float = 0.95,
-    temperature: float = 0.5,
-    repetition_penalty: float = 1.1,
+    model_settings: ModelSettings,
     n_ctx: int = 16384,
     n_gpu_layers: int = -1
 ):
-    prompt = format_template(messages, prompt_template)
+    prompt = format_template(messages, model_settings.prompt_template)
     model = GGUFModels.get_model(
-        model_name,
+        model_settings.model_name,
         n_ctx=n_ctx,
         n_gpu_layers=n_gpu_layers
     )
     tokens = model.tokenize(prompt.encode("utf-8"), special=True)
-    generator = model.generate(
-        tokens,
-        top_k=top_k,
-        top_p=top_p,
-        temp=temperature,
-        repeat_penalty=repetition_penalty
-    )
+
+    params = copy.deepcopy(vars(model_settings.generation_params))
+    params["temp"] = params.pop("temperature")
+    params["repeat_penalty"] = params.pop("repetition_penalty")
+    params.pop("max_new_tokens")
+
+    generator = model.generate(tokens, **params)
     tokens = []
     for token in generator:
         tokens.append(token)

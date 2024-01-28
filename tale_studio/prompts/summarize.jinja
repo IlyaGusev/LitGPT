@@ -1,0 +1,23 @@
+I give you a memory (a brief summary) of 400 words, you should use it to store the key content of what has been written so that you can keep track of very long context.
+
+You should first explain which sentences in the input memory are no longer necessary and why, and then explain what needs to be added into the memory and why.
+After that you should write the updated memory.
+
+Write and organize your output by strictly following the format below using JSON.
+Format:
+{
+    "updated_memory_rational": <string that explains how to update the memory>,
+    "updated_memory": <string of updated memory, around 4 to 7 sentences>,
+}
+
+Previous input memory:
+{{short_memory}}
+
+New paragraph:
+{{input_paragraph}}
+
+The updated memory should be similar to the input memory except the parts you previously thought that should be deleted or added.
+The updated memory should only store key information.
+The updated memory should never exceed 10 sentences!
+The updated memory should never contain over 500 words!
+Use strictly this language: {{language}}

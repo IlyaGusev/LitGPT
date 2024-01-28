@@ -280,37 +280,80 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
                 btn_close_load = gr.Button("Close", variant="secondary")
 
     with gr.Tab("Model"):
-        with gr.Row():
-            with gr.Column(scale=1, min_width=200):
-                with gr.Group():
+
+        with gr.Group():
+            with gr.Row():
+                with gr.Column(scale=1, min_width=200):
                     model_name = gr.Dropdown(
                         MODEL_LIST,
                         value=model_state.value.model_name,
                         multiselect=False,
                         label="Model name",
                     )
-                    api_key = gr.Textbox(
-                        label="API key",
-                        value="",
-                    )
-                    prompt_template_name = gr.Dropdown(
-                        PROMPT_TEMPLATE_LIST,
-                        value=DEFAULT_PROMPT_TEMPLATE_NAME,
-                        multiselect=False,
-                        label="Prompt template name",
-                        interactive=True
-                    )
-                    prompt_template = gr.Textbox(
-                        label="Prompt template text",
-                        value=PROMPT_TEMPLATES[DEFAULT_PROMPT_TEMPLATE_NAME],
-                        interactive=False,
-                        visible=False
-                    )
+                with gr.Column(scale=1, min_width=200):
                     embedder_name = gr.Dropdown(
                         EMBEDDER_LIST,
                         value=model_state.value.embedder_name,
                         multiselect=False,
                         label="Embedder name",
+                    )
+        with gr.Group():
+            with gr.Row():
+                api_key = gr.Textbox(
+                    label="API key",
+                    value="",
+                )
+            with gr.Row():
+                prompt_template_name = gr.Dropdown(
+                    PROMPT_TEMPLATE_LIST,
+                    value=DEFAULT_PROMPT_TEMPLATE_NAME,
+                    multiselect=False,
+                    label="Prompt template name",
+                    interactive=True
+                )
+            with gr.Row():
+                prompt_template = gr.Textbox(
+                    label="Prompt template text",
+                    value=PROMPT_TEMPLATES[DEFAULT_PROMPT_TEMPLATE_NAME],
+                    interactive=False,
+                    visible=False
+                )
+
+        with gr.Group():
+            with gr.Row():
+                with gr.Column(scale=1, min_width=200):
+                    temperature = gr.Slider(
+                        minimum=0.01,
+                        maximum=1.50,
+                        value=model_state.value.generation_params.temperature,
+                        step=0.01,
+                        interactive=True,
+                        label="Temperature"
+                    )
+                    repetition_penalty = gr.Slider(
+                        minimum=0.1,
+                        maximum=1.5,
+                        value=model_state.value.generation_params.repetition_penalty,
+                        step=0.05,
+                        interactive=True,
+                        label="Rep"
+                    )
+                with gr.Column(scale=1, min_width=200):
+                    top_p = gr.Slider(
+                        minimum=0.01,
+                        maximum=1.0,
+                        value=model_state.value.generation_params.top_p,
+                        step=0.05,
+                        interactive=True,
+                        label="Top-p",
+                    )
+                    top_k = gr.Slider(
+                        minimum=10,
+                        maximum=100,
+                        value=model_state.value.generation_params.top_k,
+                        step=5,
+                        interactive=True,
+                        label="Top-k",
                     )
 
     # Sync inputs
@@ -341,10 +384,23 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
         "model_name": model_name,
         "prompt_template": prompt_template,
         "embedder_name": embedder_name,
-        "api_key": api_key
+        "api_key": api_key,
     }
     for key, field in model_state_fields.items():
         field.change((lambda s, f, k=key: set_field(s, k, f)), [model_state, field], model_state)
+
+    def set_param(state, field, value):
+        setattr(state.generation_params, field, value)
+        return state
+
+    generation_params_fields = {
+        "temperature": temperature,
+        "repetition_penalty": repetition_penalty,
+        "top_p": top_p,
+        "top_k": top_k
+    }
+    for key, field in generation_params_fields.items():
+        field.change((lambda s, f, k=key: set_param(s, k, f)), [model_state, field], model_state)
 
     # Main events
     btn_init.click(
