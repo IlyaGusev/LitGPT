@@ -55,7 +55,7 @@ def step(state, model_state, selection_mode):
     writer = RecurrentGPT(model_state)
 
     if selection_mode == "gpt":
-        human = Human(model_name=model_state.model_name, prompt_template=model_state.prompt_template)
+        human = Human(model_state)
         state = human.step(state)
     elif selection_mode == "random":
         state.instruction = random.choice(state.next_instructions)

@@ -2,13 +2,11 @@ import json
 
 from tale_studio.recurrentgpt import State
 from tale_studio.utils import novel_json_completion, encode_prompt
-
+from tale_studio.model_settings import ModelSettings
 
 class Human:
-    def __init__(self, model_name: str, prompt_template: str, api_key: str = None):
-        self.model_name = model_name
-        self.prompt_template = prompt_template
-        self.api_key = api_key
+    def __init__(self, model_settings: ModelSettings):
+        self.model_settings = model_settings
 
     def select_plan(self, state: State):
         prompt = encode_prompt(
@@ -56,7 +54,5 @@ class Human:
     def _complete(self, prompt):
         return novel_json_completion(
             prompt,
-            model_name=self.model_name,
-            prompt_template=self.prompt_template,
-            api_key=self.api_key
+            model_settings=self.model_settings
         )
