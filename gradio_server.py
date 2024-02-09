@@ -27,18 +27,24 @@ def validate_inputs(model_state):
         raise gr.Error("Please set the API key!")
 
 
-def generate_plan(novel_type, description, model_state):
+def generate_name(state, model_state):
+    writer = RecurrentGPT(model_state)
+    state.name = writer.generate_name(state)
+    return (state, state.name)
+
+
+def generate_meta(novel_type, description, model_state):
     validate_inputs(model_state)
     writer = RecurrentGPT(model_state)
-    state = writer.generate_plan(novel_type=novel_type, description=description)
-    return (state, state.name, state.language, state.synopsis, state.plan)
+    state = writer.generate_meta(novel_type=novel_type, description=description)
+    return (state, state.name, state.language, state.synopsis, state.outline)
 
 
-def generate_first_paragraphs(state, model_state):
+def generate_first_step(state, model_state):
     assert state is not None
     validate_inputs(model_state)
     writer = RecurrentGPT(model_state)
-    state = writer.generate_first_paragraphs(state)
+    state = writer.generate_first_step(state)
     return (
         state,
         state.short_memory,
@@ -96,7 +102,7 @@ def load(file_name):
         state,
         state.name,
         state.synopsis,
-        state.plan,
+        state.outline,
         state.short_memory,
         "\n\n".join(state.paragraphs),
         state.next_instructions[0],
@@ -193,6 +199,10 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
                     max_lines=1,
                     lines=1
                 )
+                btn_gen_name = gr.Button(
+                    "Regenerate",
+                    variant="primary"
+                )
                 language = gr.Textbox(
                     label="Language (editable)",
                     max_lines=1,
@@ -204,7 +214,7 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
                     lines=8
                 )
             with gr.Column(scale=9):
-                plan = gr.Textbox(
+                outline = gr.Textbox(
                     label="Outline (editable)",
                     lines=17,
                     max_lines=17
@@ -336,7 +346,7 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
                         value=model_state.value.generation_params.repetition_penalty,
                         step=0.05,
                         interactive=True,
-                        label="Rep"
+                        label="Repetition penalty"
                     )
                 with gr.Column(scale=1, min_width=200):
                     top_p = gr.Slider(
@@ -367,7 +377,7 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
         "description": description,
         "novel_type": novel_type,
         "synopsis": synopsis,
-        "plan": plan,
+        "outline": outline,
         "instruction": instruction,
         "short_memory": short_memory
     }
@@ -404,11 +414,11 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
 
     # Main events
     btn_init.click(
-        generate_plan,
+        generate_meta,
         inputs=[novel_type, description, model_state],
-        outputs=[state, name, language, synopsis, plan]
+        outputs=[state, name, language, synopsis, outline]
     ).success(
-        generate_first_paragraphs,
+        generate_first_step,
         inputs=[state, model_state],
         outputs=[state, short_memory, paragraphs, instruction1, instruction2, instruction3]
     )
@@ -425,6 +435,11 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
             instruction3,
             instruction
         ]
+    )
+    btn_gen_name.click(
+        generate_name,
+        inputs=[state, model_state],
+        outputs=[state, name]
     )
 
     # Save/Load
@@ -461,7 +476,7 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
             state,
             name,
             synopsis,
-            plan,
+            outline,
             short_memory,
             paragraphs,
             instruction1,
@@ -480,7 +495,7 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
             state,
             name,
             synopsis,
-            plan,
+            outline,
             short_memory,
             paragraphs,
             instruction1,

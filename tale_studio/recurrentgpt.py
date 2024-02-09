@@ -12,7 +12,7 @@ from tale_studio.utils import novel_json_completion, encode_prompt, cos_sim, nov
 class State:
     name: str = ""
     synopsis: str = ""
-    plan: str = ""
+    outline: str = ""
     novel_type: str = ""
     language: str = "English"
     description: str = ""
@@ -67,118 +67,112 @@ class RecurrentGPT:
             state.memory_index
         )
 
-        output_paragraph = self.output(
-            plan=state.plan,
+        output_paragraph = self._complete_text(
+            "output",
+            outline=state.outline,
             language=state.language,
             short_memory=state.short_memory,
             input_paragraph=state.paragraphs[-1],
             input_instruction=state.instruction,
             input_long_term_memory=formatted_long_memory,
         )
+        output_paragraph = " ".join([p.strip() for p in output_paragraph.split("\n") if p.strip()])
         state.paragraphs.append(output_paragraph)
         state.update_index(self.embedder, self.passage_prefix)
 
-        state.short_memory = self.summarize(
+        state.short_memory = self._complete_json(
+            "summarize",
             language=state.language,
             short_memory=state.short_memory,
             input_paragraph=state.paragraphs[-2],
-        )
+        )["updated_memory"]
 
-        state.next_instructions = self.instruct(
+        output = self._complete_json(
+            "instruct",
             language=state.language,
             short_memory=state.short_memory,
             output_paragraph=state.paragraphs[-1],
-            plan=state.plan,
+            outline=state.outline,
             input_long_term_memory=formatted_long_memory,
         )
-
-        return state
-
-    def output(self, **kwargs):
-        prompt = encode_prompt("output.jinja", **kwargs)
-        print("OUTPUT PROMPT")
-        print(prompt)
-        print()
-        output_paragraph = self._complete_text(prompt)
-        output_paragraph = " ".join([p.strip() for p in output_paragraph.split("\n") if p.strip()])
-        print("OUTPUT")
-        print(output_paragraph)
-        print("===========")
-        return output_paragraph
-
-    def summarize(self, **kwargs):
-        prompt = encode_prompt("summarize.jinja", **kwargs)
-        print("SUMMARIZE PROMPT")
-        print(prompt)
-        print()
-        output = self._complete_json(prompt)
-        print("SUMMARIZE OUTPUT")
-        print(json.dumps(output, ensure_ascii=False, indent=4))
-        print("===========")
-        return output["updated_memory"]
-
-    def instruct(self, **kwargs):
-        prompt = encode_prompt("instruct.jinja", **kwargs)
-        print("INSTRUCT PROMPT")
-        print(prompt)
-        print()
-        output = self._complete_json(prompt)
-        print("INSTRUCT OUTPUT")
-        print(json.dumps(output, ensure_ascii=False, indent=4))
-        print("===========")
-        return [
+        state.next_instructions = [
             output["instruction_1"].strip(),
             output["instruction_2"].strip(),
             output["instruction_3"].strip(),
         ]
 
-    def generate_plan(
+        return state
+
+    def generate_name(
+        self,
+        state: State
+    ):
+        return self._complete_json(
+            "name",
+            novel_type=state.novel_type,
+            description=state.description,
+            synopsis=state.synopsis,
+            outline=state.outline,
+            language=state.language
+        )["name"]
+
+    def generate_meta(
         self,
         description: str,
         novel_type: str,
     ):
-        plan_prompt = encode_prompt(
-            "plan.jinja",
-            description=description,
-            novel_type=novel_type
-        )
-        print("PLAN PROMPT")
-        print(plan_prompt)
-        print()
-        plan_info = self._complete_json(plan_prompt)
-        print("PLAN OUTPUT")
-        print(json.dumps(plan_info, ensure_ascii=False, indent=4))
-        print("===========")
+        while True:
+            try:
+                info = self._complete_json(
+                    "meta",
+                    description=description,
+                    novel_type=novel_type
+                )
+                outline = info["outline"]
 
-        chapter_summaries = plan_info["chapter_summaries"]
-        if isinstance(chapter_summaries, dict):
-            chapter_summaries = [" ".join((k, v)) for k, v in chapter_summaries.items()]
+                assert isinstance(outline, list)
+                assert outline
+                keys = ("index", "chapter_name", "chapter_summary")
+                assert all(key in outline[0] for key in keys)
+
+                template = "Chapter {index}: {chapter_name}. {chapter_summary}"
+                chapters = [template.format(**ch) for ch in outline]
+                outline = "\n".join(chapters)
+
+                break
+            except AssertionError:
+                continue
+
         return State(
-            name=plan_info["name"],
-            synopsis=plan_info["synopsis"],
-            plan="\n".join(chapter_summaries),
+            name=info["name"],
+            synopsis=info["synopsis"],
+            language=info["language"],
+            outline=outline,
             novel_type=novel_type,
-            description=description,
-            language=plan_info["language"]
+            description=description
         )
 
-    def generate_first_paragraphs(
+    def generate_first_step(
         self,
         state: State
     ):
-        plan_start = state.plan.split("\n")[0]
-        paragraphs = self.begin(
+        outline_start = state.outline.split("\n")[0]
+        paragraphs = self._complete_text(
+            "first_paragraphs",
             language=state.language,
             novel_type=state.novel_type,
-            plan=plan_start,
+            outline=outline_start,
             name=state.name,
             synopsis=state.synopsis,
         )
+        paragraphs = paragraphs.split("\n")
+        paragraphs = [p.strip() for p in paragraphs if p.strip()]
         state.paragraphs = paragraphs
 
-        info = self.process(
+        info = self._complete_json(
+            "first_summary",
             novel_type=state.novel_type,
-            plan=state.plan,
+            outline=state.outline,
             language=state.language,
             name=state.name,
             synopsis=state.synopsis,
@@ -192,37 +186,30 @@ class RecurrentGPT:
         ]
         return state
 
-    def begin(self, **kwargs):
-        begin_prompt = encode_prompt("begin.jinja", **kwargs)
-        print("BEGIN PROMPT")
-        print(begin_prompt)
+    def _complete_json(self, prompt_name, **kwargs):
+        prompt = encode_prompt(prompt_name, **kwargs)
+        print(f"{prompt_name.upper()} PROMPT")
+        print(prompt)
         print()
-        paragraphs = self._complete_text(begin_prompt).split("\n")
-        paragraphs = [p.strip() for p in paragraphs if p.strip()]
-        print("BEGIN OUTPUT")
-        print("\n\n".join(paragraphs))
-        print("===========")
-        return paragraphs
-
-    def process(self, **kwargs):
-        process_prompt = encode_prompt("process.jinja", **kwargs)
-        print("PROCESS PROMPT")
-        print(process_prompt)
-        print()
-        info = self._complete_json(process_prompt)
-        print("PROCESS OUTPUT")
-        print(json.dumps(info, ensure_ascii=False, indent=4))
-        print("===========")
-        return info
-
-    def _complete_json(self, prompt):
-        return novel_json_completion(
+        result = novel_json_completion(
             prompt,
             model_settings=self.model_settings
         )
+        print(f"{prompt_name.upper()} OUTPUT")
+        print(json.dumps(result, ensure_ascii=False, indent=4))
+        print("===========")
+        return result
 
-    def _complete_text(self, prompt):
-        return novel_completion(
+    def _complete_text(self, prompt_name, **kwargs):
+        prompt = encode_prompt(prompt_name, **kwargs)
+        print(f"{prompt_name.upper()} PROMPT")
+        print(prompt)
+        print()
+        result = novel_completion(
             prompt,
             model_settings=self.model_settings
         )
+        print(f"{prompt_name.upper()} OUTPUT")
+        print(result)
+        print("===========")
+        return result

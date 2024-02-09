@@ -100,7 +100,7 @@ def cos_sim(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
 
 
 def encode_prompt(template_name, **kwargs):
-    template_path = PROMPTS_DIR_PATH / template_name
+    template_path = PROMPTS_DIR_PATH / f"{template_name}.jinja"
     with open(template_path) as f:
         template = Template(f.read())
     return template.render(**kwargs).strip() + "\n"
