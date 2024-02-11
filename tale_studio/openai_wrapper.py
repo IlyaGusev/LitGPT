@@ -5,9 +5,10 @@ from dataclasses import dataclass
 from typing import Optional, Sequence
 from multiprocessing.pool import ThreadPool
 
+from tiktoken import encoding_for_model
 from openai import OpenAI, APIError
 
-OPENAI_MODELS = ("gpt-3.5-turbo-16k", "gpt-4-1106-preview")
+OPENAI_MODELS = ("gpt-3.5-turbo-16k", "gpt-4-1106-preview", "gpt-3.5-turbo")
 
 
 @dataclass
@@ -32,7 +33,7 @@ def openai_completion(
     decoding_args: OpenAIDecodingArguments = DEFAULT_ARGS,
     model_name: str = DEFAULT_MODEL,
     sleep_time: int = DEFAULT_SLEEP_TIME,
-    api_key: Optional[str] = None
+    api_key: Optional[str] = None,
 ):
     decoding_args = copy.deepcopy(decoding_args)
     assert decoding_args.n == 1
@@ -40,16 +41,16 @@ def openai_completion(
         try:
             client = OpenAI(api_key=api_key) if api_key else OpenAI()
             completions = client.chat.completions.create(
-                messages=messages,
-                model=model_name,
-                **decoding_args.__dict__
+                messages=messages, model=model_name, **decoding_args.__dict__
             )
             break
         except APIError as e:
             logging.warning(f"OpenAIError: {e}.")
             if "Please reduce" in str(e):
                 decoding_args.max_tokens = int(decoding_args.max_tokens * 0.8)
-                logging.warning(f"Reducing target length to {decoding_args.max_tokens}, Retrying...")
+                logging.warning(
+                    f"Reducing target length to {decoding_args.max_tokens}, Retrying..."
+                )
             else:
                 logging.warning("Hit request rate limit; retrying...")
                 time.sleep(sleep_time)
@@ -61,13 +62,25 @@ def openai_batch_completion(
     decoding_args: OpenAIDecodingArguments = DEFAULT_ARGS,
     model_name: str = DEFAULT_MODEL,
     sleep_time: int = DEFAULT_SLEEP_TIME,
-    api_key: Optional[str] = None
+    api_key: Optional[str] = None,
 ):
     completions = []
     with ThreadPool(len(batch)) as pool:
-        results = pool.starmap(openai_completion, [
-            (messages, decoding_args, model_name, sleep_time, api_key) for messages in batch
-        ])
+        results = pool.starmap(
+            openai_completion,
+            [
+                (messages, decoding_args, model_name, sleep_time, api_key)
+                for messages in batch
+            ],
+        )
         for result in results:
             completions.append(result)
     return completions
+
+
+def openai_tokenize(
+    text: str,
+    model_name: str,
+):
+    encoding = encoding_for_model(model_name)
+    return encoding.encode(text)

@@ -27,7 +27,7 @@ PROMPT_TEMPLATES = {
     "saiga": SAIGA_TEMPLATE,
     "chatml": CHATML_TEMPLATE,
     "openai": "openai",
-    "custom": "Edit here"
+    "custom": "Edit here",
 }
 
 
@@ -40,10 +40,7 @@ def format_template(messages, template):
         elif message["role"] == "user":
             user_message = message["content"]
     assert user_message
-    return template.format(
-        system_message=system_message,
-        user_message=user_message
-    )
+    return template.format(system_message=system_message, user_message=user_message)
 
 
 PROMPT_TEMPLATE_LIST = list(PROMPT_TEMPLATES.keys())

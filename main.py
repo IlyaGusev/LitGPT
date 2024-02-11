@@ -2,7 +2,11 @@ import json
 
 import fire
 
-from tale_studio.model_settings import ModelSettings, DEFAULT_EMBEDDER_NAME, DEFAULT_MODEL_NAME
+from tale_studio.model_settings import (
+    ModelSettings,
+    DEFAULT_EMBEDDER_NAME,
+    DEFAULT_MODEL_NAME,
+)
 from tale_studio.openai_wrapper import DEFAULT_MODEL
 from tale_studio.recurrentgpt import RecurrentGPT
 from tale_studio.human_simulator import Human
@@ -15,12 +19,12 @@ def main(
     description: str = "",
     model_name: str = DEFAULT_MODEL_NAME,
     embedder_name: str = DEFAULT_EMBEDDER_NAME,
-    prompt_template: str = "openai"
+    prompt_template: str = "openai",
 ):
     model_settings = ModelSettings(
         embedder_name=DEFAULT_EMBEDDER_NAME,
         model_name=DEFAULT_MODEL,
-        prompt_template=prompt_template
+        prompt_template=prompt_template,
     )
     writer = RecurrentGPT(model_settings)
     human = Human(model_settings)
@@ -35,5 +39,5 @@ def main(
             w.write(json.dumps(state.to_dict(), ensure_ascii=False) + "\n")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     fire.Fire(main)

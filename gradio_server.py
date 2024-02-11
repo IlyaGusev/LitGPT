@@ -10,27 +10,34 @@ from tale_studio.embedders import EMBEDDER_LIST
 from tale_studio.utils import OPENAI_MODELS
 from tale_studio.human_simulator import Human
 from tale_studio.files import LOCAL_MODELS_LIST, SAVES_DIR_PATH
-from tale_studio.prompt_templates import PROMPT_TEMPLATE_LIST, PROMPT_TEMPLATES, DEFAULT_PROMPT_TEMPLATE_NAME
+from tale_studio.prompt_templates import (
+    PROMPT_TEMPLATE_LIST,
+    PROMPT_TEMPLATES,
+    DEFAULT_PROMPT_TEMPLATE_NAME,
+)
 from tale_studio.model_settings import ModelSettings
 
 
 API_KEY = os.getenv("OPENAI_API_KEY", None)
 MODEL_LIST = list(OPENAI_MODELS) + list(LOCAL_MODELS_LIST)
 DEFAULT_NOVEL_TYPE = "Science Fiction"
-DEFAULT_DESCRIPTION = "Рассказ на русском языке в сеттинге коммунизма в высокотехнологичном будущем"
+DEFAULT_DESCRIPTION = (
+    "Рассказ на русском языке в сеттинге коммунизма в высокотехнологичном будущем"
+)
 
 
 def validate_inputs(model_state):
-    if model_state.prompt_template == "openai" and model_state.model_name not in OPENAI_MODELS:
+    if (
+        model_state.prompt_template == "openai"
+        and model_state.model_name not in OPENAI_MODELS
+    ):
         raise gr.Error("Please set the correct prompt template!")
-    if model_state.model_name in OPENAI_MODELS and not API_KEY and not model_state.api_key:
+    if (
+        model_state.model_name in OPENAI_MODELS
+        and not API_KEY
+        and not model_state.api_key
+    ):
         raise gr.Error("Please set the API key!")
-
-
-def generate_name(state, model_state):
-    writer = RecurrentGPT(model_state)
-    state.name = writer.generate_name(state)
-    return (state, state.name)
 
 
 def generate_meta(novel_type, description, model_state):
@@ -77,7 +84,7 @@ def step(state, model_state, selection_mode):
         state.next_instructions[0],
         state.next_instructions[1],
         state.next_instructions[2],
-        ""
+        "",
     )
 
 
@@ -115,43 +122,13 @@ def load_from_saves(file_name):
     full_path = os.path.join(SAVES_DIR_PATH, file_name)
     return load(full_path)
 
+css = """
+footer {
+    visibility: hidden
+}
+"""
 
-def get_saves_list():
-    files = os.listdir(SAVES_DIR_PATH)
-    files = [f for f in files if not f.startswith(".")]
-    first_file = files[0] if files else None
-    return gr.update(choices=files, value=first_file, interactive=True)
-
-
-def on_selected_plan_select(instruction1, instruction2, instruction3, evt: gr.SelectData):
-    selected_plan = int(evt.value.replace("Instruction ", ""))
-    selected_plan = [instruction1, instruction2, instruction3][selected_plan - 1]
-    return selected_plan
-
-
-def on_selection_mode_select(evt: gr.SelectData):
-    value = evt.value
-    is_manual = "manual" in value
-    return gr.Row.update(visible=is_manual)
-
-
-def on_model_name_select(model_state, evt: gr.SelectData):
-    value = evt.value
-    is_local = "gguf" in value
-    model_state.model_name = value
-    return gr.update(visible=not is_local), model_state
-
-
-def on_prompt_template_name_select(model_state, prompt_template, evt: gr.SelectData):
-    value = evt.value
-    is_custom = "custom" in value
-    prompt_template = PROMPT_TEMPLATES[value]
-    is_openai = "openai" in value
-    model_state.prompt_template = prompt_template
-    return model_state, gr.update(value=prompt_template, interactive=is_custom, visible=not is_openai)
-
-
-with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
+with gr.Blocks(title="TaleStudio", css=css) as demo:
     state = gr.State(State())
     model_state = gr.State(ModelSettings())
     gr.Markdown("# Tale Studio")
@@ -163,75 +140,57 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
                         label="Novel genre and style",
                         value=DEFAULT_NOVEL_TYPE,
                     )
-                    gr.Examples([
-                        "Science Fiction",
-                        "Romance",
-                        "Mystery",
-                        "Fantasy",
-                        "Historical",
-                        "Horror",
-                        "Thriller",
-                        "Western",
-                        "Young Adult"
-                    ], inputs=[novel_type])
+                    gr.Examples(
+                        [
+                            "Science Fiction",
+                            "Romance",
+                            "Mystery",
+                            "Fantasy",
+                            "Historical",
+                            "Horror",
+                            "Thriller",
+                            "Western",
+                            "Young Adult",
+                        ],
+                        inputs=[novel_type],
+                    )
             with gr.Column(scale=3, min_width=400):
                 with gr.Group():
-                    description = gr.Textbox(label="Description", value=DEFAULT_DESCRIPTION)
-                    gr.Examples([
-                        "A novel about aliens",
-                        "A love story of a man and AI",
-                        "Dystopian society with a twist",
-                        "Contemporary coming-of-age story",
-                        "Magical realism in a small American town",
-                        "Рассказ на русском языке в сеттинге коммунизма в высокотехнологичном будущем",
-                        "История на русском языке об Англии 19 века и колониализме"
-                    ], inputs=[description])
+                    description = gr.Textbox(
+                        label="Description", value=DEFAULT_DESCRIPTION
+                    )
+                    gr.Examples(
+                        [
+                            "A novel about aliens",
+                            "A love story of a man and AI",
+                            "Dystopian society with a twist",
+                            "Contemporary coming-of-age story",
+                            "Magical realism in a small American town",
+                            "Рассказ на русском языке в сеттинге коммунизма в высокотехнологичном будущем",
+                            "История на русском языке об Англии 19 века и колониализме",
+                        ],
+                        inputs=[description],
+                    )
         with gr.Row():
-            btn_init = gr.Button(
-                "Start New Novel",
-                variant="primary"
-            )
+            btn_init = gr.Button("Start New Novel", variant="primary")
 
         with gr.Row():
             with gr.Column(scale=5):
-                name = gr.Textbox(
-                    label="Name (editable)",
-                    max_lines=1,
-                    lines=1
-                )
-                btn_gen_name = gr.Button(
-                    "Regenerate",
-                    variant="primary"
-                )
-                language = gr.Textbox(
-                    label="Language (editable)",
-                    max_lines=1,
-                    lines=1
-                )
-                synopsis = gr.Textbox(
-                    label="Synopsis (editable)",
-                    max_lines=8,
-                    lines=8
-                )
+                name = gr.Textbox(label="Name (editable)", max_lines=1, lines=1)
+                # btn_gen_name = gr.Button("🔄", variant="secondary")
+                language = gr.Textbox(label="Language (editable)", max_lines=1, lines=1)
+                synopsis = gr.Textbox(label="Synopsis (editable)", max_lines=8, lines=8)
             with gr.Column(scale=9):
-                outline = gr.Textbox(
-                    label="Outline (editable)",
-                    lines=17,
-                    max_lines=17
-                )
+                outline = gr.Textbox(label="Outline (editable)", lines=17, max_lines=17)
 
         with gr.Group():
             with gr.Row():
                 paragraphs = gr.Textbox(
-                    label="Written Paragraphs (editable)",
-                    max_lines=20,
-                    lines=20
+                    label="Written Paragraphs (editable)", max_lines=20, lines=20
                 )
             with gr.Row():
                 short_memory = gr.Textbox(
-                    label="Short-Term Memory (editable)",
-                    max_lines=5,
-                    lines=5
+                    label="Short-Term Memory (editable)", max_lines=5, lines=5
                 )
 
         with gr.Group():
@@ -247,13 +206,17 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
                 )
             with gr.Row():
                 selection_mode = gr.Radio(
-                    [("Select with GPT", "gpt"), ("Select randomly", "random"), ("Select manually", "manual")],
+                    [
+                        ("Select with GPT", "gpt"),
+                        ("Select randomly", "random"),
+                        ("Select manually", "manual"),
+                    ],
                     label="Selection mode",
-                    value="random"
+                    value="random",
                 )
 
         with gr.Group(visible=False) as instruction_selection:
-            selected_plan = gr.Radio(
+            selected_instruction = gr.Radio(
                 ["Instruction 1", "Instruction 2", "Instruction 3"],
                 label="Instruction Selection",
             )
@@ -277,7 +240,7 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
                 label="File folder",
                 info="For reference. Unchangeable.",
                 interactive=False,
-                value=SAVES_DIR_PATH
+                value=SAVES_DIR_PATH,
             )
             with gr.Row():
                 btn_confirm_save = gr.Button("Confirm", variant="primary")
@@ -319,14 +282,14 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
                     value=DEFAULT_PROMPT_TEMPLATE_NAME,
                     multiselect=False,
                     label="Prompt template name",
-                    interactive=True
+                    interactive=True,
                 )
             with gr.Row():
                 prompt_template = gr.Textbox(
                     label="Prompt template text",
                     value=PROMPT_TEMPLATES[DEFAULT_PROMPT_TEMPLATE_NAME],
                     interactive=False,
-                    visible=False
+                    visible=False,
                 )
 
         with gr.Group():
@@ -338,7 +301,7 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
                         value=model_state.value.generation_params.temperature,
                         step=0.01,
                         interactive=True,
-                        label="Temperature"
+                        label="Temperature",
                     )
                     repetition_penalty = gr.Slider(
                         minimum=0.1,
@@ -346,7 +309,7 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
                         value=model_state.value.generation_params.repetition_penalty,
                         step=0.05,
                         interactive=True,
-                        label="Repetition penalty"
+                        label="Repetition penalty",
                     )
                 with gr.Column(scale=1, min_width=200):
                     top_p = gr.Slider(
@@ -367,6 +330,12 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
                     )
 
     # Sync inputs
+
+    @paragraphs.change(inputs=[state, paragraphs], outputs=state)
+    def set_paragraphs(state, paragraphs):
+        state.paragraphs = [p.strip() for p in paragraphs.split("\n\n") if p.strip()]
+        return state
+
     def set_field(state, field, value):
         setattr(state, field, value)
         return state
@@ -379,16 +348,10 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
         "synopsis": synopsis,
         "outline": outline,
         "instruction": instruction,
-        "short_memory": short_memory
+        "short_memory": short_memory,
     }
     for key, field in state_fields.items():
         field.change((lambda s, f, k=key: set_field(s, k, f)), [state, field], state)
-
-    def set_paragraphs(state, paragraphs):
-        state.paragraphs = [p.strip() for p in paragraphs.split("\n\n") if p.strip()]
-        return state
-
-    paragraphs.change(set_paragraphs, [state, paragraphs], state)
 
     model_state_fields = {
         "model_name": model_name,
@@ -397,7 +360,9 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
         "api_key": api_key,
     }
     for key, field in model_state_fields.items():
-        field.change((lambda s, f, k=key: set_field(s, k, f)), [model_state, field], model_state)
+        field.change(
+            (lambda s, f, k=key: set_field(s, k, f)), [model_state, field], model_state
+        )
 
     def set_param(state, field, value):
         setattr(state.generation_params, field, value)
@@ -407,20 +372,29 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
         "temperature": temperature,
         "repetition_penalty": repetition_penalty,
         "top_p": top_p,
-        "top_k": top_k
+        "top_k": top_k,
     }
     for key, field in generation_params_fields.items():
-        field.change((lambda s, f, k=key: set_param(s, k, f)), [model_state, field], model_state)
+        field.change(
+            (lambda s, f, k=key: set_param(s, k, f)), [model_state, field], model_state
+        )
 
     # Main events
     btn_init.click(
         generate_meta,
         inputs=[novel_type, description, model_state],
-        outputs=[state, name, language, synopsis, outline]
+        outputs=[state, name, language, synopsis, outline],
     ).success(
         generate_first_step,
         inputs=[state, model_state],
-        outputs=[state, short_memory, paragraphs, instruction1, instruction2, instruction3]
+        outputs=[
+            state,
+            short_memory,
+            paragraphs,
+            instruction1,
+            instruction2,
+            instruction3,
+        ],
     )
 
     btn_step.click(
@@ -433,42 +407,42 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
             instruction1,
             instruction2,
             instruction3,
-            instruction
-        ]
-    )
-    btn_gen_name.click(
-        generate_name,
-        inputs=[state, model_state],
-        outputs=[state, name]
+            instruction,
+        ],
     )
 
+    @btn_gen_name.click(inputs=[state, model_state], outputs=[state, name])
+    def generate_name(state, model_state):
+        writer = RecurrentGPT(model_state)
+        state.name = writer.generate_name(state)
+        return (state, state.name)
+
     # Save/Load
-    btn_save.click(
-        lambda: (gr.update(visible=True), gr.update(visible=False)),
-        outputs=[file_saver, save_load_buttons]
-    )
-    btn_confirm_save.click(
-        save,
-        inputs=[save_filename, save_root, state]
-    ).success(
+    @btn_save.click(outputs=[file_saver, save_load_buttons])
+    def show_save_menu():
+        return gr.update(visible=True), gr.update(visible=False)
+
+    @btn_close_save.click(outputs=[file_saver, save_load_buttons])
+    def hide_save_menu():
+        return gr.update(visible=False), gr.update(visible=True)
+
+    @btn_load.click(outputs=[load_filename, file_loader, save_load_buttons])
+    def show_load_menu():
+        files = os.listdir(SAVES_DIR_PATH)
+        files = [f for f in files if not f.startswith(".")]
+        first_file = files[0] if files else None
+        load_filename = gr.update(choices=files, value=first_file, interactive=True)
+        return load_filename, gr.update(visible=True), gr.update(visible=False)
+
+    @btn_close_load.click(outputs=[file_loader, save_load_buttons])
+    def hide_load_menu():
+        return gr.update(visible=False), gr.update(visible=True)
+
+    btn_confirm_save.click(save, inputs=[save_filename, save_root, state]).success(
         lambda: (gr.update(visible=False), gr.update(visible=True)),
-        outputs=[file_saver, save_load_buttons]
+        outputs=[file_saver, save_load_buttons],
     )
-    btn_close_save.click(
-        lambda: (gr.update(visible=False), gr.update(visible=True)),
-        outputs=[file_saver, save_load_buttons]
-    )
-    btn_load.click(
-        get_saves_list,
-        outputs=[load_filename]
-    ).then(
-        lambda: (gr.update(visible=True), gr.update(visible=False)),
-        outputs=[file_loader, save_load_buttons]
-    )
-    btn_close_load.click(
-        lambda: (gr.update(visible=False), gr.update(visible=True)),
-        outputs=[file_loader, save_load_buttons]
-    )
+
     btn_confirm_load.click(
         load_from_saves,
         inputs=[load_filename],
@@ -482,10 +456,10 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
             instruction1,
             instruction2,
             instruction3,
-        ]
+        ],
     ).success(
         lambda: (gr.update(visible=False), gr.update(visible=True)),
-        outputs=[file_loader, save_load_buttons]
+        outputs=[file_loader, save_load_buttons],
     )
 
     btn_upload.upload(
@@ -501,45 +475,59 @@ with gr.Blocks(title="TaleStudio", css="footer {visibility: hidden}") as demo:
             instruction1,
             instruction2,
             instruction3,
-        ]
+        ],
     )
 
     # Other events
-    selected_plan.select(
-        on_selected_plan_select,
-        inputs=[instruction1, instruction2, instruction3],
-        outputs=[instruction]
+    @selected_instruction.select(
+        inputs=[instruction1, instruction2, instruction3], outputs=[instruction]
     )
-    selection_mode.select(
-        on_selection_mode_select,
-        inputs=[],
-        outputs=[instruction_selection]
+    def select_instruction(
+        instruction1, instruction2, instruction3, evt: gr.SelectData
+    ):
+        selected_instruction = int(evt.value.replace("Instruction ", ""))
+        selected_instruction = [instruction1, instruction2, instruction3][
+            selected_instruction - 1
+        ]
+        return selected_instruction
+
+    @selection_mode.select(outputs=[instruction_selection])
+    def on_selection_mode_select(evt: gr.SelectData):
+        value = evt.value
+        is_manual = "manual" in value
+        return gr.Row.update(visible=is_manual)
+
+    @model_name.select(inputs=[model_state], outputs=[api_key, model_state])
+    def on_model_name_select(model_state, evt: gr.SelectData):
+        value = evt.value
+        is_local = "gguf" in value
+        model_state.model_name = value
+        return gr.update(visible=not is_local), model_state
+
+    @prompt_template_name.select(
+        inputs=[model_state, prompt_template], outputs=[model_state, prompt_template]
     )
-    model_name.select(
-        on_model_name_select,
-        inputs=[model_state],
-        outputs=[api_key, model_state]
-    )
-    prompt_template_name.select(
-        on_prompt_template_name_select,
-        inputs=[model_state, prompt_template],
-        outputs=[model_state, prompt_template]
-    )
+    def select_prompt_template_name(model_state, prompt_template, evt: gr.SelectData):
+        value = evt.value
+        is_custom = "custom" in value
+        prompt_template = PROMPT_TEMPLATES[value]
+        is_openai = "openai" in value
+        model_state.prompt_template = prompt_template
+        return model_state, gr.update(
+            value=prompt_template, interactive=is_custom, visible=not is_openai
+        )
+
     demo.queue()
 
 
-def launch(
-    server_port: int = 8080,
-    server_name: str = "0.0.0.0",
-    share: bool = False
-):
+def launch(server_port: int = 8080, server_name: str = "0.0.0.0", share: bool = False):
     demo.launch(
         server_port=server_port,
         share=share,
         server_name=server_name,
         show_api=False,
         show_error=True,
-        favicon_path="static/favicon.ico"
+        favicon_path="static/favicon.ico",
     )
 
 

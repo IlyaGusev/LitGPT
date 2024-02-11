@@ -18,12 +18,7 @@ def tgi_completion(
     params = vars(model_settings.generation_params)
     data = {
         "inputs": prompt,
-        "parameters": {
-            "do_sample": True,
-            "seed": 42,
-            "watermark": False,
-            **params
-        },
+        "parameters": {"do_sample": True, "seed": 42, "watermark": False, **params},
     }
     headers = {"Content-Type": "application/json"}
     response = requests.post(url=url, json=data, headers=headers)

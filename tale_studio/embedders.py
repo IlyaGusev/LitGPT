@@ -13,5 +13,5 @@ class EmbeddersStorage:
 
 EMBEDDER_LIST = [
     "embaas/sentence-transformers-multilingual-e5-base",
-    "sentence-transformers/multi-qa-mpnet-base-cos-v1"
+    "sentence-transformers/multi-qa-mpnet-base-cos-v1",
 ]

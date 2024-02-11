@@ -6,7 +6,11 @@ from jinja2 import Template
 
 from tale_studio.model_settings import ModelSettings
 from tale_studio.files import PROMPTS_DIR_PATH
-from tale_studio.openai_wrapper import openai_completion, OPENAI_MODELS, OpenAIDecodingArguments
+from tale_studio.openai_wrapper import (
+    openai_completion,
+    OPENAI_MODELS,
+    OpenAIDecodingArguments,
+)
 from tale_studio.gguf_wrapper import gguf_completion
 from tale_studio.tgi_wrapper import tgi_completion
 
@@ -17,17 +21,14 @@ DEFAULT_SYSTEM_PROMPT = "You are a helpful and creative assistant for writing no
 def novel_completion(
     prompt: str,
     model_settings: ModelSettings,
-    system_prompt: str = DEFAULT_SYSTEM_PROMPT
+    system_prompt: str = DEFAULT_SYSTEM_PROMPT,
 ):
     messages = [
-        {
-            "role": "system",
-            "content": system_prompt
-        },
+        {"role": "system", "content": system_prompt},
         {
             "role": "user",
             "content": prompt,
-        }
+        },
     ]
     if model_settings.model_name == "tgi":
         output = tgi_completion(messages, model_settings)
@@ -39,7 +40,7 @@ def novel_completion(
                 top_p=model_settings.generation_params.top_p,
             ),
             model_name=model_settings.model_name,
-            api_key=model_settings.api_key
+            api_key=model_settings.api_key,
         )
     else:
         output = gguf_completion(messages, model_settings)
@@ -51,7 +52,7 @@ def novel_completion(
 def parse_json_output(output):
     start_index = output.find("{")
     end_index = output.rfind("}")
-    text = output[start_index:end_index + 1]
+    text = output[start_index : end_index + 1]
     text = text.strip()
     record = json.loads(text)
     return record
@@ -60,7 +61,7 @@ def parse_json_output(output):
 def novel_json_completion(
     prompt: str,
     model_settings: ModelSettings,
-    system_prompt: str = DEFAULT_SYSTEM_PROMPT
+    system_prompt: str = DEFAULT_SYSTEM_PROMPT,
 ):
     response = None
     while True:

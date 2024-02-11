@@ -15,7 +15,7 @@ class Human:
             previous_paragraph=state.paragraphs[-2],
             memory=state.short_memory,
             writer_new_paragraph=state.paragraphs[-1],
-            previous_plans=state.next_instructions
+            previous_plans=state.next_instructions,
         )
         print("HUMAN SELECT")
         print(prompt)
@@ -34,7 +34,7 @@ class Human:
             previous_paragraph=state.paragraphs[-2],
             memory=state.short_memory,
             writer_new_paragraph=state.paragraphs[-1],
-            user_edited_plan=state.instruction
+            user_edited_plan=state.instruction,
         )
         print("HUMAN STEP")
         print(prompt)
@@ -53,7 +53,4 @@ class Human:
         return state
 
     def _complete(self, prompt):
-        return novel_json_completion(
-            prompt,
-            model_settings=self.model_settings
-        )
+        return novel_json_completion(prompt, model_settings=self.model_settings)

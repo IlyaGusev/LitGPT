@@ -1,0 +1,24 @@
+You are given a summary of previous events, and a new text fragment of a book.
+Build a new summary for this fragment.
+The fragment might contain only a part of a chapter, or an intersection of several chapters.
+
+You should summarize everything from the new text fragment.
+Output summary as a JSON where each summary point is an object: {"summary": [{"summary_point": "..."}, ...]}
+All summary points should be in the same language as the text.
+
+If there are any chapter markers in the text such as "Chapter 1" or "Prologue" or "CHAPTER 2" or similar things in other languages, always preserve them as separate objects. For instance, "Chapter 2" becomes {"chapter_name": "Chapter 2"}.
+DO NOT miss such markers, they are very important to preserve the original structure of the text!
+So in that case the output will be like this:
+{
+    "summary": [
+        {"summary_point": "summary of the content from the chapter 1"},
+        {"chapter_name": "Chapter 2"},
+        {"summary_point": "summary of the content from the chapter 2"}
+    ]
+}
+
+{% if summary -%}Previous summary: {{summary}}{%- endif %}
+{% if language -%}Language: {{language}}{%- endif %}
+
+Text fragment:
+{{text}}
