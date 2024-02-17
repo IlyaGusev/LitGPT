@@ -15,7 +15,7 @@ class State:
     language: str = ""
     description: str = ""
     paragraphs: List[str] = field(default_factory=lambda: list())
-    summaries: List[Any] = field(default_factory=lambda: list())
+    l1_summaries: List[Any] = field(default_factory=lambda: list())
     l2_summaries: List[Any] = field(default_factory=lambda: list())
     short_memory: str = ""
     memory_index: Optional[torch.Tensor] = None
