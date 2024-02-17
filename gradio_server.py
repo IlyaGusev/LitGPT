@@ -5,7 +5,8 @@ import gradio as gr
 
 import fire
 
-from tale_studio.recurrentgpt import RecurrentGPT, State
+from tale_studio.state import State
+from tale_studio.recurrentgpt import RecurrentGPT
 from tale_studio.embedders import EMBEDDER_LIST
 from tale_studio.utils import OPENAI_MODELS
 from tale_studio.human_simulator import Human
@@ -121,6 +122,7 @@ def load(file_name):
 def load_from_saves(file_name):
     full_path = os.path.join(SAVES_DIR_PATH, file_name)
     return load(full_path)
+
 
 css = """
 footer {
@@ -410,12 +412,6 @@ with gr.Blocks(title="TaleStudio", css=css) as demo:
             instruction,
         ],
     )
-
-    @btn_gen_name.click(inputs=[state, model_state], outputs=[state, name])
-    def generate_name(state, model_state):
-        writer = RecurrentGPT(model_state)
-        state.name = writer.generate_name(state)
-        return (state, state.name)
 
     # Save/Load
     @btn_save.click(outputs=[file_saver, save_load_buttons])

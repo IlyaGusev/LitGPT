@@ -32,6 +32,9 @@ PROMPT_TEMPLATES = {
 
 
 def format_template(messages, template):
+    if template in PROMPT_TEMPLATES:
+        template = PROMPT_TEMPLATES[template]
+
     system_message = ""
     user_message = ""
     for message in messages:

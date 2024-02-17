@@ -1,9 +1,8 @@
 import json
-from typing import List, Optional
-from dataclasses import dataclass, asdict, field
 
 import torch
 
+from tale_studio.state import State
 from tale_studio.embedders import EmbeddersStorage
 from tale_studio.utils import (
     novel_json_completion,
@@ -11,40 +10,6 @@ from tale_studio.utils import (
     cos_sim,
     novel_completion,
 )
-
-
-@dataclass
-class State:
-    name: str = ""
-    synopsis: str = ""
-    outline: str = ""
-    novel_type: str = ""
-    language: str = ""
-    description: str = ""
-    paragraphs: List[str] = field(default_factory=lambda: list())
-    short_memory: str = ""
-    memory_index: Optional[torch.Tensor] = None
-    instruction: str = ""
-    next_instructions: List[str] = field(default_factory=lambda: list())
-
-    @property
-    def long_memory(self):
-        return self.paragraphs[:-1]
-
-    def update_index(self, embedder, passage_prefix):
-        long_memory = [passage_prefix + p for p in self.long_memory]
-        self.memory_index = embedder.encode(long_memory, convert_to_tensor=True)
-
-    def to_dict(self):
-        memory_index = self.memory_index
-        self.memory_index = None
-        result = asdict(self)
-        self.memory_index = memory_index
-        return result
-
-    @classmethod
-    def from_dict(cls, d):
-        return cls(**d)
 
 
 class RecurrentGPT:

@@ -1,24 +1,34 @@
-You are given a summary of previous events, and a new text fragment of a book.
+You are given a summary of previous events and a new text fragment of a book.
 Build a new summary for this fragment.
-The fragment might contain only a part of a chapter, or an intersection of several chapters.
+The fragment contains only a part of a chapter or an intersection of several chapters.
 
-You should summarize everything from the new text fragment.
+You should summarize the book content from the new text fragment.
+The whole summary should contain at most 10 sentences.
+Write in the same language as the text.
 Output summary as a JSON where each summary point is an object: {"summary": [{"summary_point": "..."}, ...]}
-All summary points should be in the same language as the text.
 
-If there are any chapter markers in the text such as "Chapter 1" or "Prologue" or "CHAPTER 2" or similar things in other languages, always preserve them as separate objects. For instance, "Chapter 2" becomes {"chapter_name": "Chapter 2"}.
-DO NOT miss such markers, they are very important to preserve the original structure of the text!
-So in that case the output will be like this:
+If there are any chapter headers in the text fragment such as "Prologue" or "CHAPTER 10" or similar things in other languages, always preserve them as separate objects together with summary points.
+For instance, "Chapter 2" in the text fragment becomes {"chapter_header": "Chapter 2"} and "11. Trap in the wild" in the text fragment becomes {"chapter_header": "11. Trap in the wild"}.
+Be sure to find such chapter headers, as they are vital to preserve the original structure of the text!
+Do not add your own chapter headers. Only copy them from the original text fragment! You must not invent your own headers!
+
+In case there is a chapter header in the text, the output will be like this:
 {
     "summary": [
-        {"summary_point": "summary of the content from the chapter 1"},
-        {"chapter_name": "Chapter 2"},
-        {"summary_point": "summary of the content from the chapter 2"}
+        {"summary_point": "<summary of the content from the previous chapter>"},
+        {"chapter_header": "<chapter header from the text>"},
+        {"summary_point": "<summary of the content from the next chapter>"}
     ]
 }
 
-{% if summary -%}Previous summary: {{summary}}{%- endif %}
-{% if language -%}Language: {{language}}{%- endif %}
+{% if prev_summary -%}Previous summary: {{prev_summary}}{%- endif %}
+
+{% if prev_chapter_header -%}Previous chapter header: {{prev_chapter_header}}{%- endif %}
+{% if prev_chapter_header -%}It is likely that the new chapter header will have the same structure and style as the previous chapter header, and the new chapter number is likely to be the next number. Do not repeat the previous chapter header!{%- endif %}
 
 Text fragment:
+####
 {{text}}
+###
+
+Now output JSON-formatted summary in this language: {{language}}. Don't forget to save chapter headers only if they exist in the text fragment above.

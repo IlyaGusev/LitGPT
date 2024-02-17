@@ -52,7 +52,7 @@ def novel_completion(
 def parse_json_output(output):
     start_index = output.find("{")
     end_index = output.rfind("}")
-    text = output[start_index : end_index + 1]
+    text = output[start_index: end_index + 1]
     text = text.strip()
     record = json.loads(text)
     return record

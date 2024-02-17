@@ -21,3 +21,5 @@ class ModelSettings:
     prompt_template: str = "openai"
     api_key: str = ""
     generation_params: GenerationParams = GenerationParams()
+    n_ctx: int = 16384
+    n_gpu_layers: int = -1

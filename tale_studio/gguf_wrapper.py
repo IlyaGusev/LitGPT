@@ -12,7 +12,12 @@ class GGUFModels:
     models = dict()
 
     @classmethod
-    def get_model(cls, model_name: str, n_gpu_layers: int = -1, n_ctx: int = 16384):
+    def get_model(
+        cls,
+        model_name: str,
+        n_gpu_layers: int = -1,
+        n_ctx: int = 16384,
+    ):
         if model_name not in cls.models:
             cls.models[model_name] = Llama(
                 model_path=str(MODELS_DIR_PATH / model_name),
@@ -25,12 +30,12 @@ class GGUFModels:
 def gguf_completion(
     messages: List[Dict[str, str]],
     model_settings: ModelSettings,
-    n_ctx: int = 16384,
-    n_gpu_layers: int = -1,
 ):
     prompt = format_template(messages, model_settings.prompt_template)
     model = GGUFModels.get_model(
-        model_settings.model_name, n_ctx=n_ctx, n_gpu_layers=n_gpu_layers
+        model_settings.model_name,
+        n_ctx=model_settings.n_ctx,
+        n_gpu_layers=model_settings.n_gpu_layers
     )
     tokens = model.tokenize(prompt.encode("utf-8"), special=True)
 
@@ -46,3 +51,12 @@ def gguf_completion(
         if token == model.token_eos():
             break
     return model.detokenize(tokens).decode("utf-8", errors="ignore")
+
+
+def gguf_tokenize(
+    text: str,
+    model_settings: ModelSettings,
+):
+    model = GGUFModels.get_model(model_settings.model_name)
+    tokens = model.tokenize(text.encode("utf-8"), special=True)
+    return tokens
