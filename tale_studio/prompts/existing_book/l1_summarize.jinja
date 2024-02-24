@@ -1,10 +1,10 @@
 You are given a summary of previous events and a new text fragment of a book.
-Build a new summary for this fragment.
 The fragment contains only a part of a chapter or an intersection of several chapters.
-Ignore anything not related to the book itself, copyright notices, for instance.
+Ignore anything not related to the book itself: copyright notices, for instance.
 
 You should summarize the book content from the new text fragment.
-The whole summary should contain at most 10 sentences.
+Include the vital information about key events, backgrounds, settings, characters, objectives, and motivations.
+The summary should contain at most {{num_sentences}} sentences.
 Write in the same language as the text.
 Output summary as a JSON where each summary point is an object: {"summary": [{"summary_point": "..."}, ...]}
 
@@ -34,4 +34,4 @@ Text fragment:
 
 ####
 
-Now output JSON-formatted summary in this language: {{language}}. Don't forget to save chapter headers only if they exist in the text fragment above.
+Now output JSON-formatted summary in this language: {{language}}. Save chapter headers only if they exist in the text fragment above.

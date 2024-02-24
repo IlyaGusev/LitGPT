@@ -1,20 +1,13 @@
-You are given a summary of previous events and a new text fragment of a book.
-Build a new summary for this fragment.
-The fragment contains only a part of a chapter or an intersection of several chapters.
-
-You should summarize the book content from the new text fragment.
-The whole summary should contain at most 10 sentences.
-Write in the same language as the text.
-Write in a novelistic style.
+Create one comprehensive summary of the story by merging summaries of its chunks.
+Include the vital information about key events, backgrounds, settings, characters, objectives, and motivations.
+The merged summary should be concise and should contain at most {{num_sentences}} sentences.
 Output the summary as a JSON with a single key: {"summary": "..."}
 
-{% if prev_summary -%}Previous summary: {{prev_summary}}{%- endif %}
-
-Text fragment:
+Chunk summaries:
 ####
 
 {{text}}
 
 ####
 
-Now output a summary in this language: {{language}}.
+Now output the final summary in this language: {{language}}. It should have at most {{num_sentences}} sentences.

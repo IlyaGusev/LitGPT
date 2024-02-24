@@ -8,14 +8,24 @@ from tale_studio.model_settings import ModelSettings
 from tale_studio.files import PROMPTS_DIR_PATH
 from tale_studio.openai_wrapper import (
     openai_completion,
+    openai_tokenize,
     OPENAI_MODELS,
     OpenAIDecodingArguments,
 )
-from tale_studio.gguf_wrapper import gguf_completion
+from tale_studio.gguf_wrapper import (
+    gguf_completion,
+    gguf_tokenize
+)
 from tale_studio.tgi_wrapper import tgi_completion
 
 
 DEFAULT_SYSTEM_PROMPT = "You are a helpful and creative assistant for writing novels."
+
+
+def tokenize(text: str, model_settings: ModelSettings):
+    if model_settings.model_name in OPENAI_MODELS:
+        return openai_tokenize(model_name=model_settings.model_name, text=text)
+    return gguf_tokenize(model_settings=model_settings, text=text)
 
 
 def novel_completion(
