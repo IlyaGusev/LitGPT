@@ -52,7 +52,10 @@ def summarize(
     print("OUTPUT")
     print(output)
     print("========")
-    return output["summary"]
+    for key in ("summary", "synopsis"):
+        if key in output:
+            return output[key]
+    assert False
 
 
 def split_paragrahps(paragraphs, max_paragraph_length, language):
@@ -278,13 +281,7 @@ def summarize_book(
         if "chapter_header" in point:
             l2_paragraphs.append([])
     l2_paragraphs = ["\n".join(p).strip() for p in l2_paragraphs if "\n".join(p).strip()]
-    #for p in l2_paragraphs:
-    #    print(p)
-    #    print()
-    #    print("=======")
-    #    print()
 
-    state.l2_summaries = []
     cached_l2_summaries_count = len(state.l2_summaries)
     for pnum, paragraph in enumerate(l2_paragraphs):
         if pnum < cached_l2_summaries_count:
@@ -302,20 +299,33 @@ def summarize_book(
             input_tokens_limit=input_tokens_limit,
             prev_summary=prev_summary,
             prompt="l2_summarize",
-            num_sentences=8
+            num_sentences=3
         ):
             l2_summaries.append(summary)
 
-        print("END CHAPTER")
         state.l2_summaries.append("\n".join(l2_summaries))
         state.save(output_file)
 
-    final_summary = summarize(
-        paragraphs=state.l2_summaries,
-        language=state.language,
-        prompt="l2_summarize",
-        num_sentences=8
-    )
+    state.outline = "\n\n".join(state.l2_summaries)
+    state.save(output_file)
+
+    if not state.synopsis:
+        state.synopsis = summarize(
+            paragraphs=state.l2_summaries,
+            language=state.language,
+            prompt="synopsis",
+            num_sentences=10
+        )
+        state.save(output_file)
+
+    if not state.short_memory:
+        state.short_memory = summarize(
+            paragraphs=state.l2_summaries,
+            language=state.language,
+            prompt="short_memory",
+            num_sentences=10
+        )
+        state.save(output_file)
 
 
 if __name__ == "__main__":

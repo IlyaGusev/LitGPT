@@ -8,7 +8,7 @@ from multiprocessing.pool import ThreadPool
 from tiktoken import encoding_for_model
 from openai import OpenAI, APIError
 
-OPENAI_MODELS = ("gpt-3.5-turbo-16k", "gpt-4-1106-preview", "gpt-3.5-turbo")
+OPENAI_MODELS = ("gpt-3.5-turbo-16k", "gpt-4-1106-preview", "gpt-3.5-turbo", "gpt-4-turbo-preview")
 
 
 @dataclass

@@ -66,13 +66,16 @@ class RecurrentGPT:
             input_paragraph=state.paragraphs[-2],
         )["updated_memory"]
 
+        state = self.generate_instructions(state)
+        return state
+
+    def generate_instructions(self, state: State):
         output = self._complete_json(
             "instruct",
             language=state.language,
             short_memory=state.short_memory,
             output_paragraph=state.paragraphs[-1],
             outline=state.outline,
-            input_long_term_memory=formatted_long_memory,
         )
         state.next_instructions = [
             output["instruction_1"].strip(),

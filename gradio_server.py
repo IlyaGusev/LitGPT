@@ -63,6 +63,21 @@ def generate_first_step(state, model_state):
     )
 
 
+def generate_instructions(state, model_state):
+    assert state is not None
+    validate_inputs(model_state)
+    writer = RecurrentGPT(model_state)
+    state = writer.generate_instructions(state)
+    state.instruction = random.choice(state.next_instructions)
+    return (
+        state,
+        state.next_instructions[0],
+        state.next_instructions[1],
+        state.next_instructions[2],
+        state.instruction
+    )
+
+
 def step(state, model_state, selection_mode):
     assert state is not None
     validate_inputs(model_state)
@@ -113,9 +128,9 @@ def load(file_name):
         state.outline,
         state.short_memory,
         "\n\n".join(state.paragraphs),
-        state.next_instructions[0],
-        state.next_instructions[1],
-        state.next_instructions[2],
+        state.next_instructions[0] if state.next_instructions else "",
+        state.next_instructions[1] if state.next_instructions else "",
+        state.next_instructions[2] if state.next_instructions else "",
     )
 
 
@@ -207,15 +222,18 @@ with gr.Blocks(title="TaleStudio", css=css) as demo:
                     label="Instruction 3", max_lines=7, lines=7, interactive=False
                 )
             with gr.Row():
-                selection_mode = gr.Radio(
-                    [
-                        ("Select with GPT", "gpt"),
-                        ("Select randomly", "random"),
-                        ("Select manually", "manual"),
-                    ],
-                    label="Selection mode",
-                    value="random",
-                )
+                with gr.Column():
+                    selection_mode = gr.Radio(
+                        [
+                            ("Select with GPT", "gpt"),
+                            ("Select randomly", "random"),
+                            ("Select manually", "manual"),
+                        ],
+                        label="Selection mode",
+                        value="random",
+                    )
+                with gr.Column():
+                    btn_generate_instructions = gr.Button("🔄 Generate Again", variant="primary")
 
         with gr.Group(visible=False) as instruction_selection:
             selected_instruction = gr.Radio(
@@ -411,6 +429,17 @@ with gr.Blocks(title="TaleStudio", css=css) as demo:
             instruction3,
             instruction,
         ],
+    )
+    btn_generate_instructions.click(
+        generate_instructions,
+        inputs=[state, model_state],
+        outputs=[
+            state,
+            instruction1,
+            instruction2,
+            instruction3,
+            instruction
+        ]
     )
 
     # Save/Load
