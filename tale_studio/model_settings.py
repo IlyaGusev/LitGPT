@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from tale_studio.files import LOCAL_MODELS_LIST, SAVES_DIR_PATH
+from tale_studio.files import LOCAL_MODELS_LIST
 
 DEFAULT_MODEL_NAME = LOCAL_MODELS_LIST[0] if LOCAL_MODELS_LIST else ""
 DEFAULT_EMBEDDER_NAME = "embaas/sentence-transformers-multilingual-e5-base"
