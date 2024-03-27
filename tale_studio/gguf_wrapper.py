@@ -35,7 +35,7 @@ def gguf_completion(
     model = GGUFModels.get_model(
         model_settings.model_name,
         n_ctx=model_settings.n_ctx,
-        n_gpu_layers=model_settings.n_gpu_layers
+        n_gpu_layers=model_settings.n_gpu_layers,
     )
     tokens = model.tokenize(prompt.encode("utf-8"), special=True)
 

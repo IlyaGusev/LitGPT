@@ -13,10 +13,7 @@ from tale_studio.state import State
 
 def extract_meta(paragraphs, model_settings):
     text = "\n\n".join(paragraphs)
-    prompt = encode_prompt(
-        os.path.join("existing_book", "extract_meta"),
-        text=text
-    )
+    prompt = encode_prompt(os.path.join("existing_book", "extract_meta"), text=text)
     print("META PROMPT")
     print(prompt)
     print("========")
@@ -34,7 +31,7 @@ def summarize(
     prev_chapter_header: str = "",
     model_settings: ModelSettings = ModelSettings(),
     prompt: str = "l1_summarize",
-    num_sentences: int = 10
+    num_sentences: int = 10,
 ):
     text = "\n\n".join(paragraphs)
     prompt = encode_prompt(
@@ -43,7 +40,7 @@ def summarize(
         prev_chapter_header=prev_chapter_header,
         text=text,
         language=language,
-        num_sentences=num_sentences
+        num_sentences=num_sentences,
     )
     print("PROMPT")
     print(prompt)
@@ -109,7 +106,7 @@ def gen_windows(
     paragraphs: List[str],
     model_settings: ModelSettings,
     start_index: int = -1,
-    input_tokens_limit: int = 2000
+    input_tokens_limit: int = 2000,
 ):
     window = []
     window_tokens_count = 0
@@ -140,7 +137,7 @@ def summarize_paragraphs_by_windows(
     input_tokens_limit: int = 2000,
     language: str = "English",
     prompt: str = "l1_summarize",
-    num_sentences: int = 10
+    num_sentences: int = 10,
 ):
     prev_chapter_header = ""
 
@@ -152,7 +149,7 @@ def summarize_paragraphs_by_windows(
         paragraphs,
         start_index=start_index,
         input_tokens_limit=input_tokens_limit,
-        model_settings=model_settings
+        model_settings=model_settings,
     ):
         texts = [p for _, p in window]
         if not "\n".join(texts).strip():
@@ -164,7 +161,7 @@ def summarize_paragraphs_by_windows(
             paragraphs=texts,
             model_settings=model_settings,
             prompt=prompt,
-            num_sentences=num_sentences
+            num_sentences=num_sentences,
         )
         if isinstance(summary, str):
             prev_summary = summary
@@ -227,13 +224,10 @@ def summarize_book(
     else:
         paragraphs = [p for p in text.split("\n") if p.strip()]
         paragraphs = split_paragrahps(
-            paragraphs,
-            max_paragraph_length=max_paragraph_length,
-            language=language
+            paragraphs, max_paragraph_length=max_paragraph_length, language=language
         )
         paragraphs = merge_paragraphs(
-            paragraphs,
-            min_paragraph_length=min_paragraph_length
+            paragraphs, min_paragraph_length=min_paragraph_length
         )
         state = State()
         state.paragraphs = paragraphs
@@ -241,14 +235,14 @@ def summarize_book(
     model_settings = ModelSettings(
         model_name=model_name,
         prompt_template="openai",
-        generation_params=GenerationParams(temperature=0.3, repetition_penalty=1.25)
+        generation_params=GenerationParams(temperature=0.3, repetition_penalty=1.25),
     )
 
     if not state.name:
         for window in gen_windows(
             state.paragraphs,
             input_tokens_limit=input_tokens_limit,
-            model_settings=model_settings
+            model_settings=model_settings,
         ):
             paragraphs = [p for _, p in window]
             name, language = extract_meta(paragraphs, model_settings)
@@ -263,7 +257,7 @@ def summarize_book(
         model_settings=model_settings,
         input_tokens_limit=input_tokens_limit,
         prompt="l1_summarize",
-        num_sentences=10
+        num_sentences=10,
     ):
         assert summary
         assert isinstance(summary, dict)
@@ -280,7 +274,9 @@ def summarize_book(
             continue
         if "chapter_header" in point:
             l2_paragraphs.append([])
-    l2_paragraphs = ["\n".join(p).strip() for p in l2_paragraphs if "\n".join(p).strip()]
+    l2_paragraphs = [
+        "\n".join(p).strip() for p in l2_paragraphs if "\n".join(p).strip()
+    ]
 
     cached_l2_summaries_count = len(state.l2_summaries)
     for pnum, paragraph in enumerate(l2_paragraphs):
@@ -299,7 +295,7 @@ def summarize_book(
             input_tokens_limit=input_tokens_limit,
             prev_summary=prev_summary,
             prompt="l2_summarize",
-            num_sentences=3
+            num_sentences=3,
         ):
             l2_summaries.append(summary)
 
@@ -314,7 +310,7 @@ def summarize_book(
             paragraphs=state.l2_summaries,
             language=state.language,
             prompt="synopsis",
-            num_sentences=10
+            num_sentences=10,
         )
         state.save(output_file)
 
@@ -323,7 +319,7 @@ def summarize_book(
             paragraphs=state.l2_summaries,
             language=state.language,
             prompt="short_memory",
-            num_sentences=10
+            num_sentences=10,
         )
         state.save(output_file)
 

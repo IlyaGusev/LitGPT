@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 
+from tale_studio.files import LOCAL_MODELS_LIST, SAVES_DIR_PATH
 
-DEFAULT_MODEL_NAME = "gpt-3.5-turbo-16k"
+DEFAULT_MODEL_NAME = LOCAL_MODELS_LIST[0] if LOCAL_MODELS_LIST else ""
 DEFAULT_EMBEDDER_NAME = "embaas/sentence-transformers-multilingual-e5-base"
 
 
@@ -18,8 +19,9 @@ class GenerationParams:
 class ModelSettings:
     model_name: str = DEFAULT_MODEL_NAME
     embedder_name: str = DEFAULT_EMBEDDER_NAME
-    prompt_template: str = "openai"
-    api_key: str = ""
+    prompt_template: str = "chatml"
+    openai_api_key: str = ""
+    anthropic_api_key: str = ""
     generation_params: GenerationParams = GenerationParams()
     n_ctx: int = 16384
     n_gpu_layers: int = -1

@@ -1,14 +1,13 @@
 import copy
 import logging
 import time
+import os
 from dataclasses import dataclass
 from typing import Optional, Sequence
 from multiprocessing.pool import ThreadPool
 
 from tiktoken import encoding_for_model
 from openai import OpenAI, APIError
-
-OPENAI_MODELS = ("gpt-3.5-turbo-16k", "gpt-4-1106-preview", "gpt-3.5-turbo", "gpt-4-turbo-preview")
 
 
 @dataclass
@@ -84,3 +83,20 @@ def openai_tokenize(
 ):
     encoding = encoding_for_model(model_name)
     return encoding.encode(text)
+
+
+def openai_list_models(
+    api_key: Optional[str] = None,
+):
+    if not api_key:
+        return tuple()
+    client = OpenAI(api_key=api_key)
+    return tuple((m.id for m in client.models.list().data))
+
+
+def openai_get_key(model_settings):
+    env_key = os.getenv("OPENAI_API_KEY", None)
+    local_key = model_settings.openai_api_key
+    if local_key:
+        return local_key
+    return env_key

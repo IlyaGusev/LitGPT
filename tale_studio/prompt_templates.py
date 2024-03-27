@@ -27,6 +27,7 @@ PROMPT_TEMPLATES = {
     "saiga": SAIGA_TEMPLATE,
     "chatml": CHATML_TEMPLATE,
     "openai": "openai",
+    "anthropic": "anthropic",
     "custom": "Edit here",
 }
 

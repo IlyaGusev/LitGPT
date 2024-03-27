@@ -9,13 +9,17 @@ from tale_studio.files import PROMPTS_DIR_PATH
 from tale_studio.openai_wrapper import (
     openai_completion,
     openai_tokenize,
-    OPENAI_MODELS,
+    openai_list_models,
+    openai_get_key,
     OpenAIDecodingArguments,
 )
-from tale_studio.gguf_wrapper import (
-    gguf_completion,
-    gguf_tokenize
+from tale_studio.anthropic_wrapper import (
+    anthropic_completion,
+    anthropic_tokenize,
+    anthropic_list_models,
+    anthropic_get_key,
 )
+from tale_studio.gguf_wrapper import gguf_completion, gguf_tokenize
 from tale_studio.tgi_wrapper import tgi_completion
 
 
@@ -23,8 +27,12 @@ DEFAULT_SYSTEM_PROMPT = "You are a helpful and creative assistant for writing no
 
 
 def tokenize(text: str, model_settings: ModelSettings):
-    if model_settings.model_name in OPENAI_MODELS:
+    openai_api_key = openai_get_key(model_settings)
+    anthropic_api_key = anthropic_get_key(model_settings)
+    if model_settings.model_name in openai_list_models(openai_api_key):
         return openai_tokenize(model_name=model_settings.model_name, text=text)
+    if model_settings.model_name in anthropic_list_models():
+        return anthropic_tokenize(text=text, api_key=anthropic_api_key)
     return gguf_tokenize(model_settings=model_settings, text=text)
 
 
@@ -40,9 +48,10 @@ def novel_completion(
             "content": prompt,
         },
     ]
+    openai_key = openai_get_key(model_settings)
     if model_settings.model_name == "tgi":
         output = tgi_completion(messages, model_settings)
-    elif model_settings.model_name in OPENAI_MODELS:
+    elif model_settings.model_name in openai_list_models(api_key=openai_key):
         output = openai_completion(
             messages,
             decoding_args=OpenAIDecodingArguments(
@@ -50,7 +59,13 @@ def novel_completion(
                 top_p=model_settings.generation_params.top_p,
             ),
             model_name=model_settings.model_name,
-            api_key=model_settings.api_key,
+            api_key=model_settings.openai_api_key,
+        )
+    elif model_settings.model_name in anthropic_list_models():
+        output = anthropic_completion(
+            messages,
+            model_name=model_settings.model_name,
+            api_key=model_settings.anthropic_api_key,
         )
     else:
         output = gguf_completion(messages, model_settings)
@@ -62,7 +77,7 @@ def novel_completion(
 def parse_json_output(output):
     start_index = output.find("{")
     end_index = output.rfind("}")
-    text = output[start_index: end_index + 1]
+    text = output[start_index : end_index + 1]
     text = text.strip()
     record = json.loads(text)
     return record

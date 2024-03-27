@@ -8,7 +8,12 @@ import fire
 from tale_studio.state import State
 from tale_studio.recurrentgpt import RecurrentGPT
 from tale_studio.embedders import EMBEDDER_LIST
-from tale_studio.utils import OPENAI_MODELS
+from tale_studio.utils import (
+    anthropic_list_models,
+    openai_list_models,
+    openai_get_key,
+    anthropic_get_key
+)
 from tale_studio.human_simulator import Human
 from tale_studio.files import LOCAL_MODELS_LIST, SAVES_DIR_PATH
 from tale_studio.prompt_templates import (
@@ -19,26 +24,35 @@ from tale_studio.prompt_templates import (
 from tale_studio.model_settings import ModelSettings
 
 
-API_KEY = os.getenv("OPENAI_API_KEY", None)
-MODEL_LIST = list(OPENAI_MODELS) + list(LOCAL_MODELS_LIST)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", None)
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", None)
+
+MODEL_LIST = list(LOCAL_MODELS_LIST)
+if ANTHROPIC_API_KEY:
+    MODEL_LIST.extend(anthropic_list_models())
+if OPENAI_API_KEY:
+    MODEL_LIST.extend(openai_list_models(OPENAI_API_KEY))
+
 DEFAULT_NOVEL_TYPE = "Science Fiction"
 DEFAULT_DESCRIPTION = (
     "Рассказ на русском языке в сеттинге коммунизма в высокотехнологичном будущем"
 )
 
 
-def validate_inputs(model_state):
+def validate_inputs(model_state, model_settings):
+    openai_key = openai_get_key(model_state)
     if (
         model_state.prompt_template == "openai"
-        and model_state.model_name not in OPENAI_MODELS
+        and model_state.model_name not in openai_list_models(api_key=openai_key)
     ):
         raise gr.Error("Please set the correct prompt template!")
+
+    anthropic_key = anthropic_get_key(model_state)
     if (
-        model_state.model_name in OPENAI_MODELS
-        and not API_KEY
-        and not model_state.api_key
+        model_state.prompt_template == "anthropic"
+        and model_state.model_name not in anthropic_list_models(api_key=anthropic_key)
     ):
-        raise gr.Error("Please set the API key!")
+        raise gr.Error("Please set the correct prompt template!")
 
 
 def generate_meta(novel_type, description, model_state):
@@ -74,7 +88,7 @@ def generate_instructions(state, model_state):
         state.next_instructions[0],
         state.next_instructions[1],
         state.next_instructions[2],
-        state.instruction
+        state.instruction,
     )
 
 
@@ -145,7 +159,7 @@ footer {
 }
 """
 
-with gr.Blocks(title="TaleStudio", css=css) as demo:
+with gr.Blocks(title="TaleStudio", css=css, analytics_enabled=False) as demo:
     state = gr.State(State())
     model_state = gr.State(ModelSettings())
     gr.Markdown("# Tale Studio")
@@ -222,6 +236,10 @@ with gr.Blocks(title="TaleStudio", css=css) as demo:
                     label="Instruction 3", max_lines=7, lines=7, interactive=False
                 )
             with gr.Row():
+                btn_generate_instructions = gr.Button(
+                    "🔄 Generate Again", variant="secondary"
+                )
+            with gr.Row():
                 with gr.Column():
                     selection_mode = gr.Radio(
                         [
@@ -232,8 +250,6 @@ with gr.Blocks(title="TaleStudio", css=css) as demo:
                         label="Selection mode",
                         value="random",
                     )
-                with gr.Column():
-                    btn_generate_instructions = gr.Button("🔄 Generate Again", variant="primary")
 
         with gr.Group(visible=False) as instruction_selection:
             selected_instruction = gr.Radio(
@@ -273,7 +289,6 @@ with gr.Blocks(title="TaleStudio", css=css) as demo:
                 btn_close_load = gr.Button("Close", variant="secondary")
 
     with gr.Tab("Model"):
-
         with gr.Group():
             with gr.Row():
                 with gr.Column(scale=1, min_width=200):
@@ -292,10 +307,16 @@ with gr.Blocks(title="TaleStudio", css=css) as demo:
                     )
         with gr.Group():
             with gr.Row():
-                api_key = gr.Textbox(
-                    label="API key",
-                    value="",
-                )
+                with gr.Column(scale=1, min_width=200):
+                    openai_api_key = gr.Textbox(
+                        label="OpenAI API key",
+                        value="",
+                    )
+                with gr.Column(scale=1, min_width=200):
+                    anthropic_api_key = gr.Textbox(
+                        label="Anthropic API key",
+                        value="",
+                    )
             with gr.Row():
                 prompt_template_name = gr.Dropdown(
                     PROMPT_TEMPLATE_LIST,
@@ -377,7 +398,8 @@ with gr.Blocks(title="TaleStudio", css=css) as demo:
         "model_name": model_name,
         "prompt_template": prompt_template,
         "embedder_name": embedder_name,
-        "api_key": api_key,
+        "openai_api_key": openai_api_key,
+        "anthropic_api_key": anthropic_api_key,
     }
     for key, field in model_state_fields.items():
         field.change(
@@ -433,13 +455,7 @@ with gr.Blocks(title="TaleStudio", css=css) as demo:
     btn_generate_instructions.click(
         generate_instructions,
         inputs=[state, model_state],
-        outputs=[
-            state,
-            instruction1,
-            instruction2,
-            instruction3,
-            instruction
-        ]
+        outputs=[state, instruction1, instruction2, instruction3, instruction],
     )
 
     # Save/Load
@@ -504,6 +520,26 @@ with gr.Blocks(title="TaleStudio", css=css) as demo:
     )
 
     # Other events
+    def create_model_list(model_state):
+        model_list = list(LOCAL_MODELS_LIST)
+        openai_key = openai_get_key(model_state)
+        anthropic_key = anthropic_get_key(model_state)
+        if openai_key:
+            model_list.extend(openai_list_models(openai_key))
+        if anthropic_key:
+            model_list.extend(anthropic_list_models())
+        return model_list
+
+    @openai_api_key.change(inputs=[model_state], outputs=[model_name])
+    def on_openai_api_key_change(model_state):
+        model_list = create_model_list(model_state)
+        return gr.update(choices=model_list)
+
+    @anthropic_api_key.change(inputs=[model_state], outputs=[model_name])
+    def on_anthropic_api_key_change(model_state):
+        model_list = create_model_list(model_state)
+        return gr.update(choices=model_list)
+
     @selected_instruction.select(
         inputs=[instruction1, instruction2, instruction3], outputs=[instruction]
     )
@@ -522,13 +558,6 @@ with gr.Blocks(title="TaleStudio", css=css) as demo:
         is_manual = "manual" in value
         return gr.Row.update(visible=is_manual)
 
-    @model_name.select(inputs=[model_state], outputs=[api_key, model_state])
-    def on_model_name_select(model_state, evt: gr.SelectData):
-        value = evt.value
-        is_local = "gguf" in value
-        model_state.model_name = value
-        return gr.update(visible=not is_local), model_state
-
     @prompt_template_name.select(
         inputs=[model_state, prompt_template], outputs=[model_state, prompt_template]
     )
@@ -536,10 +565,10 @@ with gr.Blocks(title="TaleStudio", css=css) as demo:
         value = evt.value
         is_custom = "custom" in value
         prompt_template = PROMPT_TEMPLATES[value]
-        is_openai = "openai" in value
+        is_hardcoded = "openai" in value or "anthropic" in value
         model_state.prompt_template = prompt_template
         return model_state, gr.update(
-            value=prompt_template, interactive=is_custom, visible=not is_openai
+            value=prompt_template, interactive=is_custom, visible=not is_hardcoded
         )
 
     demo.queue()
