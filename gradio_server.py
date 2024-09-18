@@ -39,7 +39,7 @@ DEFAULT_DESCRIPTION = (
 )
 
 
-def validate_inputs(model_state, model_settings):
+def validate_inputs(model_state):
     openai_key = openai_get_key(model_state)
     if (
         model_state.prompt_template == "openai"
