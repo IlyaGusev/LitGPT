@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from tale_studio.files import LOCAL_MODELS_LIST, SAVES_DIR_PATH
 
@@ -22,6 +22,6 @@ class ModelSettings:
     prompt_template: str = "chatml"
     openai_api_key: str = ""
     anthropic_api_key: str = ""
-    generation_params: GenerationParams = GenerationParams()
+    generation_params: GenerationParams = field(default_factory=GenerationParams)
     n_ctx: int = 16384
     n_gpu_layers: int = -1
