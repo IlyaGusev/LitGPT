@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 
 from tale_studio.files import LOCAL_MODELS_LIST
 
-DEFAULT_MODEL_NAME = LOCAL_MODELS_LIST[0] if LOCAL_MODELS_LIST else ""
+DEFAULT_MODEL_NAME = LOCAL_MODELS_LIST[0] if LOCAL_MODELS_LIST else "gpt-4o-mini"
 DEFAULT_EMBEDDER_NAME = "embaas/sentence-transformers-multilingual-e5-base"
 
 
